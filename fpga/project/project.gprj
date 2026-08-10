@@ -1,0 +1,42 @@
+<?xml version="1" encoding="UTF-8" ?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW5AST-138B" pn="GW5AST-LV138FPG676AC1/I0">gw5ast138b-007</Device>
+    <FileList>
+      <File path="src/axi/arbiter.v" type="file.verilog" enable="1" />
+      <File path="src/axi/axi_dma.v" type="file.verilog" enable="1" />
+      <File path="src/axi/axi_dma_rd.v" type="file.verilog" enable="1" />
+      <File path="src/axi/axi_dma_wr.v" type="file.verilog" enable="1" />
+      <File path="src/axi/axi_interconnect.v" type="file.verilog" enable="1" />
+      <File path="src/axi/axis_async_fifo.v" type="file.verilog" enable="1" />
+      <File path="src/axi/priority_encoder.v" type="file.verilog" enable="1" />
+      <File path="src/convolution/adder.sv" type="file.verilog" enable="1" />
+      <File path="src/convolution/conv1d.sv" type="file.verilog" enable="1" />
+      <File path="src/convolution/demux.sv" type="file.verilog" enable="1" />
+      <File path="src/convolution/float_mult_byte.sv" type="file.verilog" enable="1" />
+      <File
+      path="src/convolution/grayscale_to_ddr_stream.sv"
+      type="file.verilog"
+      enable="1"
+    />
+      <File path="src/convolution/line_buffer.sv" type="file.verilog" enable="1" />
+      <File path="src/convolution/mux.sv" type="file.verilog" enable="1" />
+      <File path="src/convolution/ping_pong_buffer.sv" type="file.verilog" enable="1" />
+      <File
+      path="src/convolution/rgb_to_grayscale_stream.sv"
+      type="file.verilog"
+      enable="1"
+    />
+      <File path="src/convolution/scalar_product.sv" type="file.verilog" enable="1" />
+      <File path="src/convolution/weight_loader.sv" type="file.verilog" enable="1" />
+      <File path="src/convolution/window.sv" type="file.verilog" enable="1" />
+      <File path="src/logic_conv.sv" type="file.verilog" enable="1" />
+      <File path="src/logic_dma.v" type="file.verilog" enable="1" />
+      <File path="src/top.v" type="file.verilog" enable="1" />
+      <File path="src/project.cst" type="file.cst" enable="1" />
+      <File path="src/project.sdc" type="file.sdc" enable="1" />
+      <File path="src/convolution/kernel.mi" type="file.other" enable="1" />
+    </FileList>
+</Project>
