@@ -1,9 +1,26 @@
 *.log
+*.vo
+*.mod
+
+loaders/
 
 project/impl/
 project/*.gprj.user
 project/src/**/temp/
 
-loaders/
+project/src/serdes/serdes.v
+project/src/serdes/serdes.csr
+project/src/serdes/serdes_tmp.toml
+project/src/serdes/pcie_controller
+project/src/serdes/upar_arbiter
 
-# project/
+project/src/pcie_sgdma/pcie_sgdma.v
+
+project/src/pll_init.v
+project/src/gowin_pll/gowin_pll.v
+project/src/gowin_pll/gowin_pll_mod*.v
+
+project/src/gowin_sp/gowin_sp.v
+project/src/gowin_rom/gowin_rom.v
+
+project/src/ddr3_memory_interface/ddr3_memory_interface.v

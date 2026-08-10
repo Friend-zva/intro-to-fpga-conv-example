@@ -1,0 +1,15 @@
+[General]
+file=gowin_rom
+ipc_version=4
+module=Gowin_ROM
+target_device=gw5ast138b-007
+type=rom
+version=1.0
+
+[Config]
+DEPTH=9
+LANG=0
+MEM_FILE=../kernel.mi
+READ=1
+RESET_MODE=true
+WIDTH=32
