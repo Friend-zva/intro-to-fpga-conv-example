@@ -15,6 +15,20 @@
         <File path="src/serdes/pcie_controller/pcie_controller.v" type="file.verilog" enable="1"/>
         <File path="src/serdes/serdes.v" type="file.verilog" enable="1"/>
         <File path="src/serdes/upar_arbiter/upar_arbiter.v" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_arbiter.sv" type="file.verilog" enable="1" />
+        <File path="src/taxi/taxi_axi_dma.sv" type="file.verilog" enable="1" />
+        <File path="src/taxi/taxi_axi_dma_rd.sv" type="file.verilog" enable="1" />
+        <File path="src/taxi/taxi_axi_dma_wr.sv" type="file.verilog" enable="1" />
+        <File path="src/taxi/taxi_axi_if.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axi_interconnect.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axi_interconnect_rd.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axi_interconnect_wr.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axis_async_fifo.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axis_if.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_dma_desc_if.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_penc.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_sync_reset.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_sync_signal.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/kernel.mi" type="file.other" enable="1"/>
     </FileList>
 </Project>
