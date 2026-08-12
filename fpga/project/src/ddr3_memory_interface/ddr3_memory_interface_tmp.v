@@ -6,7 +6,7 @@
 //Part Number: GW5AST-LV138FPG676AC1/I0
 //Device: GW5AST-138
 //Device Version: B
-//Created Time: Mon Aug 10 17:02:01 2026
+//Created Time: Wed Aug 12 12:00:24 2026
 
 //Change the instance name and port connections to the signal names
 //--------Copy here to design--------
@@ -23,7 +23,7 @@
 		.s_axi_awvalid(s_axi_awvalid), //input s_axi_awvalid
 		.s_axi_awready(s_axi_awready), //output s_axi_awready
 		.s_axi_awid(s_axi_awid), //input [3:0] s_axi_awid
-		.s_axi_awaddr(s_axi_awaddr), //input [28:0] s_axi_awaddr
+		.s_axi_awaddr(s_axi_awaddr), //input [29:0] s_axi_awaddr
 		.s_axi_awlen(s_axi_awlen), //input [7:0] s_axi_awlen
 		.s_axi_awsize(s_axi_awsize), //input [2:0] s_axi_awsize
 		.s_axi_awburst(s_axi_awburst), //input [1:0] s_axi_awburst
@@ -39,7 +39,7 @@
 		.s_axi_arvalid(s_axi_arvalid), //input s_axi_arvalid
 		.s_axi_arready(s_axi_arready), //output s_axi_arready
 		.s_axi_arid(s_axi_arid), //input [3:0] s_axi_arid
-		.s_axi_araddr(s_axi_araddr), //input [28:0] s_axi_araddr
+		.s_axi_araddr(s_axi_araddr), //input [29:0] s_axi_araddr
 		.s_axi_arlen(s_axi_arlen), //input [7:0] s_axi_arlen
 		.s_axi_arsize(s_axi_arsize), //input [2:0] s_axi_arsize
 		.s_axi_arburst(s_axi_arburst), //input [1:0] s_axi_arburst
@@ -54,7 +54,7 @@
 		.sr_ack(sr_ack), //output sr_ack
 		.ref_ack(ref_ack), //output ref_ack
 		.burst(burst), //input burst
-		.O_ddr_addr(O_ddr_addr), //output [13:0] O_ddr_addr
+		.O_ddr_addr(O_ddr_addr), //output [14:0] O_ddr_addr
 		.O_ddr_ba(O_ddr_ba), //output [2:0] O_ddr_ba
 		.O_ddr_cs_n(O_ddr_cs_n), //output O_ddr_cs_n
 		.O_ddr_ras_n(O_ddr_ras_n), //output O_ddr_ras_n

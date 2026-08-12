@@ -5,7 +5,7 @@ module top (
 
     output [5:0] led,
 
-    output [13:0] ddr_addr,
+    output [14:0] ddr_addr,
     output [2:0] ddr_ba,
     output ddr_cs_n,
     output ddr_ras_n,
@@ -36,7 +36,7 @@ module top (
   localparam integer AXI_STRB_WIDTH = AXI_DATA_WIDTH / 8;
   localparam integer AXI_ID_WIDTH = 4;
   localparam integer AXI_BURST_LEN = 1;
-  localparam integer AXI_ADDR_WIDTH = 29;
+  localparam integer AXI_ADDR_WIDTH = 30;
   localparam integer AXI_LEN_WIDTH = AXI_ADDR_WIDTH + 1;
 
   // ===============
