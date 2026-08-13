@@ -1,5 +1,6 @@
 module line_buffer #(
-    parameter integer IMAGE_WIDTH = 640
+    parameter integer IMAGE_WIDTH = 640,
+    parameter integer RD_LATENCY  = 2
 ) (
     input logic clk,
     input logic rst_n,
@@ -12,11 +13,18 @@ module line_buffer #(
     output logic line_valid
 );
 
+  logic [RD_LATENCY-1:0] valid_pipe;
+
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       line_valid <= 1'b0;
-    end else if (write_en && addr == IMAGE_WIDTH - 1) begin
-      line_valid <= 1'b1;  // always valid, and `write_en' controls the lines
+      valid_pipe <= '0;
+    end else begin
+      valid_pipe <= {valid_pipe[RD_LATENCY-2:0], (write_en && addr == IMAGE_WIDTH - 1)};
+
+      if (valid_pipe[RD_LATENCY-1]) begin
+        line_valid <= 1'b1;  // always valid, `write_en' controls the lines
+      end
     end
   end
 

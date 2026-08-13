@@ -1,5 +1,6 @@
 module ping_pong_buffer #(
-    parameter integer IMAGE_WIDTH = 640
+    parameter integer IMAGE_WIDTH = 640,
+    parameter integer RD_LATENCY  = 2
 ) (
     input logic clk,
     input logic rst_n,
@@ -8,8 +9,9 @@ module ping_pong_buffer #(
     output logic       s_ready,
     input  logic [7:0] s_data,
 
-    input logic [$clog2(IMAGE_WIDTH)-1:0] rd_addr,
+    input logic                           rd_req,
     input logic                           rd_buf_sel,
+    input logic [$clog2(IMAGE_WIDTH)-1:0] rd_addr,
 
     output logic       m_valid,
     output logic [7:0] m_data,
@@ -70,7 +72,22 @@ module ping_pong_buffer #(
     end
   endgenerate
 
-  assign m_valid = 1'b1;
+  logic valid_pipe[RD_LATENCY];
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      for (int i = 0; i < RD_LATENCY; i++) begin
+        valid_pipe[i] <= 1'b0;
+      end
+    end else begin
+      valid_pipe[0] <= rd_req;
+      for (int i = 1; i < RD_LATENCY; i++) begin
+        valid_pipe[i] <= valid_pipe[i-1];
+      end
+    end
+  end
+
+  assign m_valid = valid_pipe[RD_LATENCY-1];
   assign m_data  = bank_data[rd_buf_sel];
 
 endmodule

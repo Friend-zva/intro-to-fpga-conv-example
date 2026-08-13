@@ -21,7 +21,7 @@ module rgb_to_grayscale_stream #(
 );
 
   assign rd_desc_req.req_src_addr = cfg_read_addr;
-  assign rd_desc_req.req_len = cfg_len;
+  assign rd_desc_req.req_len      = cfg_len;
 
   localparam integer COUNT_PIXELS = AXI_DATA_WIDTH / 32;
   localparam integer WIDTH_PTR = $clog2(COUNT_PIXELS);
@@ -90,8 +90,8 @@ module rgb_to_grayscale_stream #(
             m_last     <= 1'b0;
             m_last_reg <= s_axis_rx.tlast;
           end else if (m_ready && busy) begin
-            m_data <= pixels[int'(pixel_ptr)*8+:8];
-            m_valid <= 1'b1;
+            m_data    <= pixels[int'(pixel_ptr)*8+:8];
+            m_valid   <= 1'b1;
             pixel_ptr <= pixel_ptr + 1;
 
             if (pixel_ptr == INDEX_PIXEL_LAST) begin

@@ -5,15 +5,15 @@ module float_mult_byte (
     output logic [7:0] uint8_out
 );
 
-  logic sign;
-  logic [7:0] exponent;
-  logic [22:0] mantissa;
+  logic               sign;
+  logic        [ 7:0] exponent;
+  logic        [22:0] mantissa;
 
-  logic signed [8:0] exp_shift;
-  logic [31:0] mant_x_pixel;
-  logic [31:0] pixel_ext;
-  logic [32:0] fraction_sum;
-  logic [31:0] scaled_mantissa;
+  logic signed [ 8:0] exp_shift;
+  logic        [31:0] mant_x_pixel;
+  logic        [31:0] pixel_ext;
+  logic        [32:0] fraction_sum;
+  logic        [31:0] scaled_mantissa;
 
   always_comb begin
     sign            = float_in[31];

@@ -35,8 +35,8 @@ module logic_conv #(
   localparam integer M = KERNEL_SIZE;
   localparam integer LINE_PTR = $clog2(M + 1);
 
-  logic rtg_valid;
-  logic rtg_ready;
+  logic       rtg_valid;
+  logic       rtg_ready;
   logic [7:0] rtg_data;
 
   rgb_to_grayscale_stream #(
@@ -98,8 +98,8 @@ module logic_conv #(
     end
   endgenerate
 
-  logic mux_valid;
-  logic [7:0] mux_data[M];
+  logic       mux_valid;
+  logic [7:0] mux_data  [M];
 
   mux_m1_to_m #(
       .M(M)
@@ -178,8 +178,9 @@ module logic_conv #(
       .m_data (add_data)
   );
 
-  logic [$clog2(IMAGE_WIDTH)-1:0] ddr_rd_addr;
+  logic                           ddr_rd_reg;
   logic                           ddr_rd_buf_sel;
+  logic [$clog2(IMAGE_WIDTH)-1:0] ddr_rd_addr;
 
   logic                           buf_valid;
   logic [                    7:0] buf_data;
@@ -195,6 +196,7 @@ module logic_conv #(
       .s_valid(add_valid),
       .s_ready(add_ready),
       .s_data(add_data),
+      .rd_req(ddr_rd_reg),
       .rd_addr(ddr_rd_addr),
       .rd_buf_sel(ddr_rd_buf_sel),
       .m_valid(buf_valid),
@@ -221,8 +223,10 @@ module logic_conv #(
       .buf_done(buf_done),
       .buf_done_ready(buf_done_ready),
       .buf_done_sel(buf_done_sel),
+      .rd_req(ddr_rd_reg),
       .rd_addr(ddr_rd_addr),
       .rd_buf_sel(ddr_rd_buf_sel),
+      .s_valid(buf_valid),
       .s_data(buf_data)
   );
 

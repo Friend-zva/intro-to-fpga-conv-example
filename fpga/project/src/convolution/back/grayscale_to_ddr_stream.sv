@@ -15,9 +15,11 @@ module grayscale_to_ddr3_stream #(
     taxi_dma_desc_if.req_src wr_desc_req,
     taxi_axis_if.src m_axis_tx,
 
+    output logic                                             rd_req,
+    output logic                                             rd_buf_sel,
     output logic [$clog2(IMAGE_WIDTH-2*(KERNEL_SIZE/2))-1:0] rd_addr,
-    output logic rd_buf_sel,
 
+    input logic       s_valid,
     input logic [7:0] s_data,
 
     input  logic buf_done,
@@ -31,10 +33,10 @@ module grayscale_to_ddr3_stream #(
   localparam integer BEATS_PER_ROW = (ROW_LEN + BYTES_PER_WORD - 1) / BYTES_PER_WORD;
   localparam integer LAST_BEAT_BYTES = ROW_LEN - (BEATS_PER_ROW - 1) * BYTES_PER_WORD;
 
-  logic [$clog2(BYTES_PER_WORD)-1:0] byte_cnt;
+  logic [ $clog2(BYTES_PER_WORD)-1:0] byte_cnt;
   logic [$clog2(BEATS_PER_ROW+1)-1:0] beat_cnt;
-  logic [$clog2(IMAGE_HEIGHT)-1:0] row_idx;
-  logic [AXI_DATA_WIDTH-1:0] beat_data;
+  logic [   $clog2(IMAGE_HEIGHT)-1:0] row_idx;
+  logic [         AXI_DATA_WIDTH-1:0] beat_data;
 
   typedef enum logic [1:0] {
     IDLE,
@@ -45,6 +47,7 @@ module grayscale_to_ddr3_stream #(
   state_t state;
 
   assign buf_done_ready = (state == IDLE);
+  assign rd_req = (state == PACK) && !s_valid;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -85,14 +88,16 @@ module grayscale_to_ddr3_stream #(
         end
 
         PACK: begin
-          beat_data[byte_cnt*8+:8] <= s_data;
+          if (s_valid) begin
+            beat_data[byte_cnt*8+:8] <= s_data;
 
-          if (byte_cnt == BYTES_PER_WORD - 1 || rd_addr == ROW_LEN - 1) begin
-            byte_cnt <= '0;
-            state    <= SEND;
-          end else begin
-            byte_cnt <= byte_cnt + 1'b1;
-            rd_addr  <= rd_addr + 1'b1;
+            if (byte_cnt == BYTES_PER_WORD - 1 || rd_addr == ROW_LEN - 1) begin
+              byte_cnt <= '0;
+              state    <= SEND;
+            end else begin
+              byte_cnt <= byte_cnt + 1'b1;
+              rd_addr  <= rd_addr + 1'b1;
+            end
           end
         end
 
@@ -107,10 +112,10 @@ module grayscale_to_ddr3_stream #(
             if (beat_cnt == BEATS_PER_ROW - 1) begin
               state <= IDLE;
             end else begin
-              beat_cnt <= beat_cnt + 1'b1;
+              beat_cnt  <= beat_cnt + 1'b1;
               beat_data <= '0;
-              rd_addr <= rd_addr + 1'b1;
-              state <= PACK;
+              rd_addr   <= rd_addr + 1'b1;
+              state     <= PACK;
             end
           end
         end
