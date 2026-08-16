@@ -1,0 +1,61 @@
+#include <stdint.h>
+
+#ifndef GOWIN_BAR0_H
+#define GOWIN_BAR0_H
+
+#define BAR0_SIZE (1024 * 16)
+
+#define PCIE_READY (0xaa009719)
+#define CREDIT_MAX (0x3FF)
+
+// For control register (0x04)
+#define SGDMA_STOP (0x0000)
+#define SGDMA_START ((1 << 0))
+#define SGDMA_START_POLL ((1 << 0) | (1 << 1))
+#define SGDMA_START_POLL_DUPL ((1 << 0) | (1 << 1) | (1 << 2))
+#define SGDMA_DONE (1 << 2)
+
+typedef struct __attribute__((packed, aligned(32))) {
+    volatile uint32_t id;       //* 0x00 - Channel Identifier (RO)
+    volatile uint32_t ctrl;     //* 0x04 - Channel Control (RW)
+    volatile uint32_t ctrl_w1s; //* 0x08 - Channel Control (W1S)
+    volatile uint32_t ctrl_w1c; //* 0x0C - Channel Control (W1C)
+
+    volatile uint32_t addr_desc_lo; //* 0x10 - Descriptor Low Address (RW)
+    volatile uint32_t addr_desc_hi; //* 0x14 - Descriptor High Address (RW)
+    volatile uint32_t addr_poll_lo; //* 0x18 - Poll Low Address (RW)
+    volatile uint32_t addr_poll_hi; //* 0x1C - Poll High Address (RW)
+
+    volatile uint32_t desc_count; //* 0x20 - Completed Descriptor Count (RO)
+    volatile uint32_t rsv_24;     //* 0x24-0x27 - Reserved
+
+    volatile uint32_t num_desc_adj; //* 0x28 - Descriptor Adjacent Number (RW)
+    volatile uint32_t rsv_2c;       //* 0x2C-2F - Reserved
+
+    volatile uint32_t status0;   //* 0x30 - Status (RW1C/RO)
+    volatile uint32_t status1;   //* 0x34 - Status (RC)
+    volatile uint32_t rsv_38[5]; //* 0x38-0x4B - Reserved
+
+    volatile uint32_t credit;     //* 0x4C - Credit (RW, C2H only)
+    volatile uint32_t rsv_50[44]; //* 0x50-0xFF - Reserved
+} GowinDMAChannel;
+
+typedef struct __attribute__((packed, aligned(32))) {
+    volatile uint32_t id;         //* 0x00 - Control Identifier (RO)
+    volatile uint32_t ctrl_init;  //* 0x04 - Initial Control (WO)
+    volatile uint32_t stat_init;  //* 0x08 - Initial Status (RO)
+    volatile uint32_t rsv_0c[61]; //* 0x0C-0xFF - Reserved
+} GowinControl;
+
+typedef struct __attribute__((packed, aligned(32))) {
+    GowinDMAChannel h2c[16];            //* 0x0000 - 0x0FFF (1 channel only)
+    GowinDMAChannel c2h[16];            //* 0x1000 - 0x1FFF (1 channel only)
+    volatile uint32_t rsv_ctrl_pre[64]; //* 0x2000 - 0x20FF (skip ID:0000)
+
+    GowinControl ctrl;                    //* 0x2100 - 0x21FF (ID:0001)
+    volatile uint32_t rsv_ctrl_post[896]; //* 0x2200 - 0x2FFF (skip ID:0010-1111)
+
+    volatile uint32_t rsv[1024]; //* 0x3000-0x3FFF - Reserved
+} GowinBar0;
+
+#endif // GOWIN_BAR0_H

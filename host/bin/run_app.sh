@@ -1,0 +1,101 @@
+#!/bin/bash
+
+bindir="$(dirname $0)"
+
+dev=$(lspci -d 22c2:1100)
+
+[ -z "$dev" ] && {
+  echo "Could not find the Gowin's PCIe device."
+  exit 1
+}
+
+echo -e "Find PCIe device:\n$dev\n"
+
+grep -e 'Gowin' -e 'GOWIN' /usr/share/misc/pci.ids -q || {
+  sudo sed -i '/Illegal Vendor ID/i\
+22c2  Gowin Semiconductor Corporation' /usr/share/misc/pci.ids
+}
+
+lsmod | grep -q 'gowin_pcie' || {
+  sudo insmod ${bindir}/../driver/gowin_pcie_drv.ko
+}
+
+data=4096
+block=128
+dump=0
+
+if [ $# -ge 1 ]; then
+  data=$1
+  block=$2
+  dump=$3
+else
+  echo '*  Data   size (bytes) :'
+  echo '0. default  1. 1KB  2. 4KB  3. 16KB  4. 1MB  5. 16MB  6. 128MB  7. 512MB'
+  echo -n "Please enter your choice (0-7): "
+  while true; do
+    read -n 1 b
+    [ "$b" -ge 0 ] && [ "$b" -le 8 ] && {
+      data=$b
+      break
+    }
+    echo -n " Invalid choice, try again: "
+  done
+  echo ''
+
+  echo '*  Block  size (bytes) :'
+  echo '0. default  1. 128  2. 256  3. 512  4. 1024  5. 2048  6. 4096'
+  echo -n "Please enter your choice (0-6): "
+  while true; do
+    read -n 1 b
+    [ "$b" -ge 0 ] && [ "$b" -le 8 ] && {
+      block=$b
+      break
+    }
+    echo -n " Invalid choice, try again: "
+  done
+  echo ''
+
+  echo '*  Enable  dump (bool) :'
+  echo '1. Yes  2. No'
+  echo -n "Please enter your choice (1-2): "
+  while true; do
+    read -n 1 d
+    case "$d" in
+    1 | y | Y)
+      dump=1
+      break
+      ;;
+    2 | n | N)
+      dump=0
+      break
+      ;;
+    *) echo -n " Invalid choice, try again: " ;;
+    esac
+  done
+  echo ''
+fi
+
+case $data in
+1) size_data=1024 ;;
+2) size_data=4096 ;;
+3) size_data=16384 ;;
+4) size_data=1048576 ;;
+5) size_data=16777216 ;;
+6) size_data=134217728 ;;
+7) size_data=536870912 ;;
+*) size_data=2048 ;;
+esac
+
+case $block in
+1) size_block=128 ;;
+2) size_block=256 ;;
+3) size_block=512 ;;
+4) size_block=1024 ;;
+5) size_block=2048 ;;
+6) size_block=4096 ;;
+*) size_block=128 ;;
+esac
+
+echo "size_data=$size_data size_block=$size_block"
+
+sudo ${bindir}/conv ${size_data} ${size_block} ${dump}

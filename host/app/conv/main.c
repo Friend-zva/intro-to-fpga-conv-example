@@ -1,0 +1,346 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+
+#include "../../include/gowin_bar0.h"
+#include "../../include/gowin_bar2.h"
+#include "../../include/gowin_descriptor.h"
+#include "../../include/gowin_pcie_drv_uapi.h"
+
+#include "../lib/config.h"
+#include "../lib/dump.h"
+#include "../lib/process.h"
+#include "../lib/utils_drv.h"
+#include "conv.h"
+
+#define PP_ADDR_LO(addr) ((addr) & 0xFFFFFFFF)
+#define PP_ADDR_HI(addr) ((addr >> 32) & 0xFFFFFFFF)
+
+#define MODULE_NUM(number, module) ((number) > module ? module : (number))
+#define MODULE_DESC(num_desc) (MODULE_NUM(num_desc, DESC_IN_BLOCK_MAX))
+#define MODULE_CREDIT(num_credit) (MODULE_NUM(num_credit, CREDIT_MAX))
+
+static const int TIMEOUT_POLL = 1000000;
+
+static volatile sig_atomic_t flag_exit = 0;
+void handle_sigint(int sig) { flag_exit = 1; }
+
+static int DBG_INFO = 1;
+
+static int FLAG_LAST = SET_FLAG_STOP | SET_FLAG_EOP | SET_FLAG_COMP;
+
+int main(int argc, char *argv[]) {
+    signal(SIGINT, handle_sigint);
+    volatile int val;
+
+    Config config = init_config(argc, argv);
+    uint32_t size_data = config.size_data;
+    uint32_t size_block = config.size_block;
+
+    uint32_t num_desc = size_data / size_block;
+    if (num_desc == 0) {
+        return -1;
+    }
+    uint32_t num_desc_adj = num_desc - 1;
+    uint32_t _num_desc_swap = __builtin_bswap32(num_desc);
+
+    uint32_t size_descs = num_desc * SIZE_DESC;
+    uint32_t offset_poll =
+        size_descs - 2 * sizeof(uint32_t); // masking as `next_lo` for alignment
+
+    Process *proc = init_proc(size_data, size_descs);
+    if (proc == NULL) {
+        return -1;
+    }
+
+    GowinBar0 *gwbar0 = (GowinBar0 *)proc->gwbar0;
+    GowinBar2 *gwbar2 = (GowinBar2 *)proc->gwbar2;
+
+    if (DBG_INFO) {
+        val = gwbar0->rsv[0];
+        printf("gwbar0 alive\n");
+    }
+    if (DBG_INFO) {
+        val = gwbar2->rsv_28[0];
+        printf("gwbar2 alive\n");
+    }
+
+    gwbar0->ctrl.ctrl_init = 1;
+    while (gwbar0->ctrl.stat_init != PCIE_READY) {
+        if (flag_exit) {
+            dest_proc(proc);
+            return -1;
+        }
+    }
+    if (DBG_INFO) {
+        printf("pcie ready\n");
+    }
+
+    struct gowin_ioctl_param param = {0};
+    param.cfg_type = 2;
+    param.cfg_where = 0x90; // Link Status
+    val = ioctl(proc->fd, GOWIN_CONFIG_READ_DWORD, &param);
+    if (val) {
+        printf("Failed to check link status\n");
+        dest_proc(proc);
+        return -1;
+    }
+
+    // ddr
+
+    uint32_t addr_ddr_h2c = 0x0;
+    uint32_t addr_ddr_c2h = size_data;
+
+    // h2c
+
+    volatile GowinDescriptor *desc_h2c_p = (GowinDescriptor *)proc->desc_src_m;
+    memset((void *)desc_h2c_p, 0, size_descs);
+    uint64_t desc_h2c_a = proc->desc_src;
+
+    volatile uint32_t *poll_h2c_p = (uint32_t *)(proc->desc_src_m + offset_poll);
+    uint64_t poll_h2c_a = proc->desc_src + offset_poll;
+
+    volatile uint8_t *sp = proc->data_src_m;
+    uint64_t sa = proc->data_src;
+
+    for (int i = 0; i < size_data; i++) {
+        sp[i] = i % 256;
+    }
+    if (config.en_dumping) {
+        dump_source(sa, sp);
+    }
+
+    // c2h
+
+    volatile GowinDescriptor *desc_c2h_p = (GowinDescriptor *)proc->desc_dst_m;
+    memset((void *)desc_c2h_p, 0, size_descs);
+    uint64_t desc_c2h_a = proc->desc_dst;
+
+    volatile uint32_t *poll_c2h_p = (uint32_t *)(proc->desc_dst_m + offset_poll);
+    uint64_t poll_c2h_a = proc->desc_dst + offset_poll;
+
+    volatile uint8_t *dp = proc->data_dst_m;
+    uint64_t da = proc->data_dst;
+
+    if (DBG_INFO) {
+        printf("*** Init: %i descriptors (%d/%d) ***\n", num_desc, size_data,
+               size_block);
+    }
+
+    if (DBG_INFO) {
+        printf("Status_ini: 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+               *poll_h2c_p, gwbar0->h2c[0].ctrl, gwbar0->h2c[0].status0,
+               gwbar0->h2c[0].desc_count, desc_h2c_p[0].flags,
+               desc_h2c_p[num_desc_adj].flags);
+        fflush(stdout);
+    }
+
+    // ====================
+    // Host PC -> FPGA DDR3
+    // ====================
+    for (int i = 0; i < num_desc_adj; i++) {
+        uint32_t flags = 0x0;
+        uint64_t desc_next_a = 0x0;
+        if (IS_LAST_DESC(i)) {
+            uint32_t num_desc_adj_next = num_desc - (i + 1);
+            flags = SET_FLAG_NUM_DESC(MODULE_DESC(num_desc_adj_next - 1));
+            desc_next_a = proc->desc_src + (i + 1) * SIZE_DESC;
+        };
+
+        desc_h2c_p->flags = __builtin_bswap32(flags);
+        desc_h2c_p->length = __builtin_bswap32(size_block);
+        desc_h2c_p->addr_src_lo = __builtin_bswap32(PP_ADDR_LO(sa));
+        desc_h2c_p->addr_src_hi = __builtin_bswap32(PP_ADDR_HI(sa));
+        desc_h2c_p->addr_dst_lo = 0x0;
+        desc_h2c_p->addr_dst_hi = 0x0;
+        desc_h2c_p->next_lo = __builtin_bswap32(PP_ADDR_LO(desc_next_a));
+        desc_h2c_p->next_hi = __builtin_bswap32(PP_ADDR_HI(desc_next_a));
+
+        desc_h2c_p += 1;
+        sa += size_block;
+    }
+
+    desc_h2c_p->flags = __builtin_bswap32(FLAG_LAST);
+    desc_h2c_p->length = __builtin_bswap32(size_block);
+    desc_h2c_p->addr_src_lo = __builtin_bswap32(PP_ADDR_LO(sa));
+    desc_h2c_p->addr_src_hi = __builtin_bswap32(PP_ADDR_HI(sa));
+    desc_h2c_p->addr_dst_lo = __builtin_bswap32(0x01234567);
+    desc_h2c_p->addr_dst_hi = __builtin_bswap32(0x89ABCDEF);
+    desc_h2c_p->next_lo = 0x0;
+    desc_h2c_p->next_hi = 0x0;
+
+    gwbar0->h2c[0].addr_desc_lo = PP_ADDR_LO(desc_h2c_a);
+    gwbar0->h2c[0].addr_desc_hi = PP_ADDR_HI(desc_h2c_a);
+    gwbar0->h2c[0].addr_poll_lo = PP_ADDR_LO(poll_h2c_a);
+    gwbar0->h2c[0].addr_poll_hi = PP_ADDR_HI(poll_h2c_a);
+    gwbar0->h2c[0].num_desc_adj = MODULE_DESC(num_desc_adj);
+
+    if (DBG_INFO) {
+        debug_dma(proc->fd, 0, 32);
+        debug_dma(proc->fd, 1, 16);
+    }
+
+    gwbar2->addr_ddr_h2c = PP_ADDR_LO(addr_ddr_h2c);
+    gwbar2->leng_ddr_h2c = size_data;
+    gwbar2->ctrl = BAR2_PCIE_WR_START;
+    gwbar0->h2c[0].ctrl = SGDMA_START_POLL;
+
+    int timeout_h2c = TIMEOUT_POLL;
+    while ((*poll_h2c_p != _num_desc_swap) && --timeout_h2c > 0 && !flag_exit) {
+        if (DBG_INFO) {
+            printf("Status_h2c: 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+                   *poll_h2c_p, gwbar0->h2c[0].ctrl, gwbar0->h2c[0].status0,
+                   gwbar0->h2c[0].desc_count, (desc_h2c_p - num_desc_adj)->flags,
+                   desc_h2c_p->flags);
+            fflush(stdout);
+        }
+        usleep(1);
+    }
+    if (DBG_INFO) {
+        printf("h2c: poll: 0x%08x, status: 0x%08x, overhead: %08x%08x\n",
+               *poll_h2c_p, gwbar2->status, gwbar2->rsv_18[0], gwbar2->rsv_18[1]);
+        fflush(stdout);
+    }
+    if (timeout_h2c <= 0) {
+        printf("h2c: timeout\n");
+        fflush(stdout);
+    }
+
+    gwbar0->h2c[0].ctrl = SGDMA_STOP;
+    gwbar2->ctrl = BAR2_PCIE_WR_STOP;
+
+    if (flag_exit) {
+        dest_proc(proc);
+        return 1;
+    }
+
+    // ============================
+    // Logic: DDR3 -> Adder -> DDR3
+    // ============================
+    gwbar2->addr_lcore_rd = PP_ADDR_LO(addr_ddr_h2c);
+    gwbar2->addr_lcore_wr = PP_ADDR_LO(addr_ddr_c2h);
+    gwbar2->leng_lcore = size_data;
+    gwbar2->ctrl = BAR2_LCORE_START;
+
+    int timeout_lcore = TIMEOUT_POLL;
+    while (!(gwbar2->status & BAR2_LCORE_DONE) && --timeout_lcore > 0 &&
+           !flag_exit) {
+        usleep(1);
+    }
+    if (DBG_INFO) {
+        printf("lcore: status: 0x%08x\n", gwbar2->status);
+    }
+    if (timeout_lcore <= 0) {
+        printf("lcore: timeout\n");
+    }
+
+    gwbar2->ctrl = BAR2_LCORE_STOP;
+
+    if (flag_exit) {
+        dest_proc(proc);
+        return 1;
+    }
+
+    // ====================
+    // FPGA DDR3 -> Host PC
+    // ====================
+    for (int i = 0; i < num_desc_adj; i++) {
+        uint32_t flags = 0x0;
+        uint64_t desc_next_a = 0x0;
+        if (IS_LAST_DESC(i)) {
+            uint32_t num_desc_adj_next = num_desc - (i + 1);
+            flags = SET_FLAG_NUM_DESC(MODULE_DESC(num_desc_adj_next - 1));
+            desc_next_a = proc->desc_dst + (i + 1) * SIZE_DESC;
+        };
+
+        desc_c2h_p->flags = __builtin_bswap32(flags);
+        desc_c2h_p->length = __builtin_bswap32(size_block);
+        desc_c2h_p->addr_src_lo = 0x0;
+        desc_c2h_p->addr_src_hi = 0x0;
+        desc_c2h_p->addr_dst_lo = __builtin_bswap32(PP_ADDR_LO(da));
+        desc_c2h_p->addr_dst_hi = __builtin_bswap32(PP_ADDR_HI(da));
+        desc_c2h_p->next_lo = __builtin_bswap32(PP_ADDR_LO(desc_next_a));
+        desc_c2h_p->next_hi = __builtin_bswap32(PP_ADDR_HI(desc_next_a));
+
+        desc_c2h_p += 1;
+        da += size_block;
+    }
+
+    desc_c2h_p->flags = __builtin_bswap32(FLAG_LAST);
+    desc_c2h_p->length = __builtin_bswap32(size_block);
+    desc_c2h_p->addr_src_lo = 0x0;
+    desc_c2h_p->addr_src_hi = 0x0;
+    desc_c2h_p->addr_dst_lo = __builtin_bswap32(PP_ADDR_LO(da));
+    desc_c2h_p->addr_dst_hi = __builtin_bswap32(PP_ADDR_HI(da));
+    desc_c2h_p->next_lo = 0x0;
+    desc_c2h_p->next_hi = 0x0;
+
+    gwbar0->c2h[0].addr_desc_lo = PP_ADDR_LO(desc_c2h_a);
+    gwbar0->c2h[0].addr_desc_hi = PP_ADDR_HI(desc_c2h_a);
+    gwbar0->c2h[0].addr_poll_lo = PP_ADDR_LO(poll_c2h_a);
+    gwbar0->c2h[0].addr_poll_hi = PP_ADDR_HI(poll_c2h_a);
+    gwbar0->c2h[0].num_desc_adj = MODULE_DESC(num_desc_adj);
+    gwbar0->c2h[0].credit = CREDIT_MAX;
+    // gwbar0->c2h[0].credit = MODULE_CREDIT(num_desc);
+
+    gwbar2->addr_ddr_c2h = PP_ADDR_LO(addr_ddr_c2h);
+    gwbar2->leng_ddr_c2h = size_data;
+    gwbar2->ctrl = BAR2_PCIE_RD_START;
+    gwbar0->c2h[0].ctrl = SGDMA_START_POLL;
+
+    int timeout_c2h = TIMEOUT_POLL;
+    while ((*poll_c2h_p != _num_desc_swap) && --timeout_c2h > 0 && !flag_exit) {
+        uint32_t credits = gwbar0->c2h[0].credit & CREDIT_MAX;
+        if (credits <= DESC_IN_BLOCK_MAX) {
+            gwbar0->c2h[0].credit = MODULE_CREDIT(CREDIT_MAX - credits);
+        }
+
+        if (DBG_INFO) {
+            printf("Status_c2h: 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
+                   *poll_c2h_p, gwbar0->c2h[0].ctrl, gwbar0->c2h[0].status0,
+                   gwbar0->c2h[0].desc_count, gwbar0->c2h[0].credit,
+                   (desc_c2h_p - num_desc_adj)->flags, desc_c2h_p->flags);
+            fflush(stdout);
+        }
+        usleep(1);
+    }
+    if (DBG_INFO) {
+        printf("c2h: poll: 0x%08x\n", *poll_c2h_p);
+    }
+    if (timeout_c2h <= 0) {
+        printf("c2h: timeout\n");
+    }
+
+    gwbar0->c2h[0].ctrl = SGDMA_STOP;
+    gwbar2->ctrl = BAR2_PCIE_RD_STOP;
+
+    if (flag_exit) {
+        dest_proc(proc);
+        return 1;
+    }
+
+    for (int i = 0; i < size_data / 4; i++) {
+        uint32_t d = ((uint32_t *)dp)[i];
+        uint32_t s = ((uint16_t *)sp)[i * 2] + ((uint16_t *)sp)[i * 2 + 1];
+        if (d != s) {
+            printf("*** FAILED ***\n");
+            break;
+        }
+    }
+    if (config.en_dumping) {
+        dump_destination(da, dp);
+    }
+
+    dest_proc(proc);
+    return 0;
+}
