@@ -2,3 +2,8 @@
 *.ko
 *.mod*
 *.cmd
+
+driver/Module.*
+driver/modules.*
+
+bin/conv
