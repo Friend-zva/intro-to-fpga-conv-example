@@ -6,19 +6,33 @@
     <Device name="GW5AST-138B" pn="GW5AST-LV138FPG676AC1/I0">gw5ast138b-007</Device>
     <FileList>
         <File path="src/Pcie_Sgdma/Pcie_Sgdma.v" type="file.verilog" enable="1"/>
+        <File path="src/convolution/back/grayscale_to_ddr_stream.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/back/ping_pong_buffer.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/front/demux.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/front/line_buffer.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/front/mux.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/front/rgb_to_grayscale_stream.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/middle/adder.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/middle/conv1d.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/middle/float_mult_byte.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/middle/scalar_product.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/middle/weight_loader.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/middle/window.sv" type="file.verilog" enable="1"/>
         <File path="src/ddr3_memory_interface/ddr3_memory_interface.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll_mod.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_rom/gowin_rom.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_sp/gowin_sp.v" type="file.verilog" enable="1"/>
+        <File path="src/logic_conv.sv" type="file.verilog" enable="1"/>
+        <File path="src/manager_logic.sv" type="file.verilog" enable="1"/>
         <File path="src/pll_init.v" type="file.verilog" enable="1"/>
         <File path="src/serdes/pcie_controller/pcie_controller.v" type="file.verilog" enable="1"/>
         <File path="src/serdes/serdes.v" type="file.verilog" enable="1"/>
         <File path="src/serdes/upar_arbiter/upar_arbiter.v" type="file.verilog" enable="1"/>
-        <File path="src/taxi/taxi_arbiter.sv" type="file.verilog" enable="1" />
-        <File path="src/taxi/taxi_axi_dma.sv" type="file.verilog" enable="1" />
-        <File path="src/taxi/taxi_axi_dma_rd.sv" type="file.verilog" enable="1" />
-        <File path="src/taxi/taxi_axi_dma_wr.sv" type="file.verilog" enable="1" />
+        <File path="src/taxi/taxi_arbiter.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axi_dma.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axi_dma_rd.sv" type="file.verilog" enable="1"/>
+        <File path="src/taxi/taxi_axi_dma_wr.sv" type="file.verilog" enable="1"/>
         <File path="src/taxi/taxi_axi_if.sv" type="file.verilog" enable="1"/>
         <File path="src/taxi/taxi_axi_interconnect.sv" type="file.verilog" enable="1"/>
         <File path="src/taxi/taxi_axi_interconnect_rd.sv" type="file.verilog" enable="1"/>
@@ -29,23 +43,10 @@
         <File path="src/taxi/taxi_penc.sv" type="file.verilog" enable="1"/>
         <File path="src/taxi/taxi_sync_reset.sv" type="file.verilog" enable="1"/>
         <File path="src/taxi/taxi_sync_signal.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/middle/adder.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/middle/conv1d.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/front/demux.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/middle/float_mult_byte.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/back/grayscale_to_ddr_stream.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/front/line_buffer.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/front/mux.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/back/ping_pong_buffer.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/front/rgb_to_grayscale_stream.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/middle/scalar_product.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/middle/weight_loader.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/middle/window.sv" type="file.verilog" enable="1"/>
-        <File path="src/manager_logic.sv" type="file.verilog" enable="1"/>
-        <File path="src/logic_conv.sv" type="file.verilog" enable="1"/>
         <File path="src/top.sv" type="file.verilog" enable="1"/>
-        <File path="src/kernel.mi" type="file.other" enable="1"/>
         <File path="src/project.cst" type="file.cst" enable="1"/>
         <File path="src/project.sdc" type="file.sdc" enable="1"/>
+        <File path="src/gao/logic_conv.rao" type="file.gao" enable="0"/>
+        <File path="src/kernel.mi" type="file.other" enable="1"/>
     </FileList>
 </Project>

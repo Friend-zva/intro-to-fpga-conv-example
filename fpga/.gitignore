@@ -9,7 +9,6 @@ project/*.gprj.user
 project/src/**/temp/
 
 project/src/serdes/serdes.v
-project/src/serdes/serdes.csr
 project/src/serdes/serdes_tmp.toml
 project/src/serdes/pcie_controller
 project/src/serdes/upar_arbiter
