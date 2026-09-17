@@ -23,8 +23,8 @@ module grayscale_to_ddr3_stream #(
     input logic [7:0] s_data,
 
     input  logic buf_done,
-    output logic buf_done_ready,
-    input  logic buf_done_sel
+    input  logic buf_done_sel,
+    output logic buf_done_ready
 );
 
   localparam integer PAD = KERNEL_SIZE / 2;
