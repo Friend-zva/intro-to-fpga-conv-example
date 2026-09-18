@@ -113,7 +113,10 @@ int main(int argc, char *argv[]) {
     uint64_t sa = proc->data_src;
 
     for (int i = 0; i < size_data; i++) {
-        sp[i] = i % 256;
+        int pixel = i / 4;
+        int col = pixel % 256;
+        int channel = i % 4; // 0=R,1=G,2=B,3=reserved
+        sp[i] = (channel == 3) ? 0 : (uint8_t)col;
     }
     if (config.en_dumping) {
         dump_source(sa, sp);
@@ -328,12 +331,14 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for (int i = 0; i < size_data / 4; i++) {
-        uint32_t d = ((uint32_t *)dp)[i];
-        uint32_t s = ((uint16_t *)sp)[i * 2] + ((uint16_t *)sp)[i * 2 + 1];
-        if (d != s) {
-            printf("*** FAILED ***\n");
-            break;
+    for (int row = 0; row < 6; row++) {
+        for (int col = 0; col < 256; col++) {
+            uint8_t expected = (col == 0 || col == 255) ? 0 : (uint8_t)col;
+            uint8_t got = dp[row * 256 + col];
+            if (got != expected) {
+                printf("*** FAILED row=%d col=%d exp=%d got=%d ***\n", row, col,
+                       expected, got);
+            }
         }
     }
     if (config.en_dumping) {
