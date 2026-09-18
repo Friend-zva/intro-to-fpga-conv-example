@@ -4,7 +4,7 @@
 #include "config.h"
 
 static const int SIZE_BLOCK_MIN = 128;
-static const int SIZE_DATA_MAX = 536870912;
+static const int SIZE_DATA_MAX = 4194304;
 
 Config init_config(int argc, char *argv[]) {
     int size_data = 2048;

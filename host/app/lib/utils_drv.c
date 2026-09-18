@@ -11,7 +11,7 @@
 
 #include "../../include/gowin_pcie_drv_uapi.h"
 
-const char driver_node[] = "/dev/gowin_pcie_drv";
+const char driver_node[] = "/dev/gowin_pcie";
 
 int dev_open(char *node) {
     const char *filename = driver_node;
