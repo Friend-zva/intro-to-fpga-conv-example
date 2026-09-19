@@ -1,6 +1,7 @@
 *.log
 *.vo
 *.mod
+*.fs
 
 loaders/
 
@@ -13,7 +14,7 @@ project/src/serdes/serdes_tmp.toml
 project/src/serdes/pcie_controller
 project/src/serdes/upar_arbiter
 
-project/src/pcie_sgdma/pcie_sgdma.v
+project/src/Pcie_Sgdma/Pcie_Sgdma.v
 
 project/src/pll_init.v
 project/src/gowin_pll/gowin_pll.v
