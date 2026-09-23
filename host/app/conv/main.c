@@ -18,9 +18,10 @@
 #include "../../include/gowin_pcie_drv_uapi.h"
 
 #include "../lib/config.h"
-#include "../lib/dump.h"
 #include "../lib/process.h"
 #include "../lib/utils_drv.h"
+
+#include "dump.h"
 
 #define PP_ADDR_LO(addr) ((addr) & 0xFFFFFFFF)
 #define PP_ADDR_HI(addr) ((addr >> 32) & 0xFFFFFFFF)
@@ -38,26 +39,37 @@ static int DBG_INFO = 1;
 
 static int FLAG_LAST = SET_FLAG_STOP | SET_FLAG_EOP | SET_FLAG_COMP;
 
+static int IMAGE_WIDTH = 256;
+static int IMAGE_HEIGHT = 8;
+static int KERNEL_SIZE = 3;
+
 int main(int argc, char *argv[]) {
     signal(SIGINT, handle_sigint);
     volatile int val;
 
     Config config = init_config(argc, argv);
-    uint32_t size_data = config.size_data;
+    uint32_t size_data_h2c = config.size_data;
     uint32_t size_block = config.size_block;
 
-    uint32_t num_desc = size_data / size_block;
-    if (num_desc == 0) {
+    uint32_t output_rows = IMAGE_HEIGHT - (KERNEL_SIZE - 1);
+    uint32_t size_data_c2h = output_rows * IMAGE_WIDTH;
+
+    uint32_t num_desc_h2c = size_data_h2c / size_block;
+    uint32_t num_desc_c2h = size_data_c2h / size_block;
+    if (num_desc_h2c == 0 || num_desc_c2h == 0) {
         return -1;
     }
-    uint32_t num_desc_adj = num_desc - 1;
-    uint32_t _num_desc_swap = __builtin_bswap32(num_desc);
 
-    uint32_t size_descs = num_desc * SIZE_DESC;
+    uint32_t num_desc_h2c_adj = num_desc_h2c - 1;
+    uint32_t num_desc_c2h_adj = num_desc_c2h - 1;
+    uint32_t _num_desc_h2c_swap = __builtin_bswap32(num_desc_h2c);
+    uint32_t _num_desc_c2h_swap = __builtin_bswap32(num_desc_c2h);
+
+    uint32_t size_descs = num_desc_h2c * SIZE_DESC;
     uint32_t offset_poll =
         size_descs - 2 * sizeof(uint32_t); // masking as `next_lo` for alignment
 
-    Process *proc = init_proc(size_data, size_descs);
+    Process *proc = init_proc(size_data_h2c, size_descs);
     if (proc == NULL) {
         return -1;
     }
@@ -98,7 +110,7 @@ int main(int argc, char *argv[]) {
     // ddr
 
     uint32_t addr_ddr_h2c = 0x0;
-    uint32_t addr_ddr_c2h = size_data;
+    uint32_t addr_ddr_c2h = size_data_h2c;
 
     // h2c
 
@@ -112,7 +124,7 @@ int main(int argc, char *argv[]) {
     volatile uint8_t *sp = proc->data_src_m;
     uint64_t sa = proc->data_src;
 
-    for (int i = 0; i < size_data; i++) {
+    for (int i = 0; i < size_data_h2c; i++) {
         int pixel = i / 4;
         int col = pixel % 256;
         int channel = i % 4; // 0=R,1=G,2=B,3=reserved
@@ -135,26 +147,27 @@ int main(int argc, char *argv[]) {
     uint64_t da = proc->data_dst;
 
     if (DBG_INFO) {
-        printf("*** Init: %i descriptors (%d/%d) ***\n", num_desc, size_data,
-               size_block);
+        printf(
+            "*** Init: H2C %u descriptors, C2H %u descriptors (%u/%u bytes) ***\n",
+            num_desc_h2c, num_desc_c2h, size_data_h2c, size_data_c2h);
     }
 
     if (DBG_INFO) {
         printf("Status_ini: 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
                *poll_h2c_p, gwbar0->h2c[0].ctrl, gwbar0->h2c[0].status0,
                gwbar0->h2c[0].desc_count, desc_h2c_p[0].flags,
-               desc_h2c_p[num_desc_adj].flags);
+               desc_h2c_p[num_desc_h2c_adj].flags);
         fflush(stdout);
     }
 
     // ====================
     // Host PC -> FPGA DDR3
     // ====================
-    for (int i = 0; i < num_desc_adj; i++) {
+    for (int i = 0; i < num_desc_h2c_adj; i++) {
         uint32_t flags = 0x0;
         uint64_t desc_next_a = 0x0;
         if (IS_LAST_DESC(i)) {
-            uint32_t num_desc_adj_next = num_desc - (i + 1);
+            uint32_t num_desc_adj_next = num_desc_h2c - (i + 1);
             flags = SET_FLAG_NUM_DESC(MODULE_DESC(num_desc_adj_next - 1));
             desc_next_a = proc->desc_src + (i + 1) * SIZE_DESC;
         };
@@ -185,7 +198,7 @@ int main(int argc, char *argv[]) {
     gwbar0->h2c[0].addr_desc_hi = PP_ADDR_HI(desc_h2c_a);
     gwbar0->h2c[0].addr_poll_lo = PP_ADDR_LO(poll_h2c_a);
     gwbar0->h2c[0].addr_poll_hi = PP_ADDR_HI(poll_h2c_a);
-    gwbar0->h2c[0].num_desc_adj = MODULE_DESC(num_desc_adj);
+    gwbar0->h2c[0].num_desc_adj = MODULE_DESC(num_desc_h2c_adj);
 
     if (DBG_INFO) {
         debug_dma(proc->fd, 0, 32);
@@ -193,16 +206,16 @@ int main(int argc, char *argv[]) {
     }
 
     gwbar2->addr_ddr_h2c = PP_ADDR_LO(addr_ddr_h2c);
-    gwbar2->leng_ddr_h2c = size_data;
+    gwbar2->leng_ddr_h2c = size_data_h2c;
     gwbar2->ctrl = BAR2_PCIE_WR_START;
     gwbar0->h2c[0].ctrl = SGDMA_START_POLL;
 
     int timeout_h2c = TIMEOUT_POLL;
-    while ((*poll_h2c_p != _num_desc_swap) && --timeout_h2c > 0 && !flag_exit) {
+    while ((*poll_h2c_p != _num_desc_h2c_swap) && --timeout_h2c > 0 && !flag_exit) {
         if (DBG_INFO) {
             printf("Status_h2c: 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
                    *poll_h2c_p, gwbar0->h2c[0].ctrl, gwbar0->h2c[0].status0,
-                   gwbar0->h2c[0].desc_count, (desc_h2c_p - num_desc_adj)->flags,
+                   gwbar0->h2c[0].desc_count, (desc_h2c_p - num_desc_h2c_adj)->flags,
                    desc_h2c_p->flags);
             fflush(stdout);
         }
@@ -226,12 +239,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // ============================
-    // Logic: DDR3 -> Adder -> DDR3
-    // ============================
+    // ==================================
+    // Logic: DDR3 -> Convolution -> DDR3
+    // ==================================
     gwbar2->addr_lcore_rd = PP_ADDR_LO(addr_ddr_h2c);
     gwbar2->addr_lcore_wr = PP_ADDR_LO(addr_ddr_c2h);
-    gwbar2->leng_lcore = size_data;
+    gwbar2->leng_lcore = size_data_h2c;
     gwbar2->ctrl = BAR2_LCORE_START;
 
     int timeout_lcore = TIMEOUT_POLL;
@@ -256,11 +269,11 @@ int main(int argc, char *argv[]) {
     // ====================
     // FPGA DDR3 -> Host PC
     // ====================
-    for (int i = 0; i < num_desc_adj; i++) {
+    for (int i = 0; i < num_desc_c2h_adj; i++) {
         uint32_t flags = 0x0;
         uint64_t desc_next_a = 0x0;
         if (IS_LAST_DESC(i)) {
-            uint32_t num_desc_adj_next = num_desc - (i + 1);
+            uint32_t num_desc_adj_next = num_desc_c2h - (i + 1);
             flags = SET_FLAG_NUM_DESC(MODULE_DESC(num_desc_adj_next - 1));
             desc_next_a = proc->desc_dst + (i + 1) * SIZE_DESC;
         };
@@ -291,17 +304,17 @@ int main(int argc, char *argv[]) {
     gwbar0->c2h[0].addr_desc_hi = PP_ADDR_HI(desc_c2h_a);
     gwbar0->c2h[0].addr_poll_lo = PP_ADDR_LO(poll_c2h_a);
     gwbar0->c2h[0].addr_poll_hi = PP_ADDR_HI(poll_c2h_a);
-    gwbar0->c2h[0].num_desc_adj = MODULE_DESC(num_desc_adj);
+    gwbar0->c2h[0].num_desc_adj = MODULE_DESC(num_desc_c2h_adj);
     gwbar0->c2h[0].credit = CREDIT_MAX;
     // gwbar0->c2h[0].credit = MODULE_CREDIT(num_desc);
 
     gwbar2->addr_ddr_c2h = PP_ADDR_LO(addr_ddr_c2h);
-    gwbar2->leng_ddr_c2h = size_data;
+    gwbar2->leng_ddr_c2h = size_data_c2h;
     gwbar2->ctrl = BAR2_PCIE_RD_START;
     gwbar0->c2h[0].ctrl = SGDMA_START_POLL;
 
     int timeout_c2h = TIMEOUT_POLL;
-    while ((*poll_c2h_p != _num_desc_swap) && --timeout_c2h > 0 && !flag_exit) {
+    while ((*poll_c2h_p != _num_desc_c2h_swap) && --timeout_c2h > 0 && !flag_exit) {
         uint32_t credits = gwbar0->c2h[0].credit & CREDIT_MAX;
         if (credits <= DESC_IN_BLOCK_MAX) {
             gwbar0->c2h[0].credit = MODULE_CREDIT(CREDIT_MAX - credits);
@@ -311,7 +324,7 @@ int main(int argc, char *argv[]) {
             printf("Status_c2h: 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x 0x%08x\n",
                    *poll_c2h_p, gwbar0->c2h[0].ctrl, gwbar0->c2h[0].status0,
                    gwbar0->c2h[0].desc_count, gwbar0->c2h[0].credit,
-                   (desc_c2h_p - num_desc_adj)->flags, desc_c2h_p->flags);
+                   (desc_c2h_p - num_desc_c2h_adj)->flags, desc_c2h_p->flags);
             fflush(stdout);
         }
         usleep(1);
@@ -331,13 +344,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for (int row = 0; row < 6; row++) {
-        for (int col = 0; col < 256; col++) {
-            uint8_t expected = (col == 0 || col == 255) ? 0 : (uint8_t)col;
-            uint8_t got = dp[row * 256 + col];
-            if (got != expected) {
-                printf("*** FAILED row=%d col=%d exp=%d got=%d ***\n", row, col,
-                       expected, got);
+    for (int row = 0; row < IMAGE_HEIGHT - KERNEL_SIZE / 2 - 1; row++) {
+        for (int col = 0; col < IMAGE_WIDTH; col++) {
+            uint8_t exp = (col == 0 || col == IMAGE_WIDTH - 1) ? 0 : col;
+            uint8_t got = dp[row * IMAGE_WIDTH + col];
+            if (got != exp) {
+                printf("*** FAILED row=%d col=%d exp=%d got=%d ***\n", row, col, exp,
+                       got);
             }
         }
     }
