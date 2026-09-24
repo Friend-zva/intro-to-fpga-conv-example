@@ -1,8 +1,7 @@
 module float_mult_byte (
-    input logic [31:0] float_in,
-    input logic [ 7:0] uint8_in,
-
-    output logic [7:0] uint8_out
+    input  logic [31:0] float_in,
+    input  logic [ 7:0] uint8_in,
+    output logic [ 7:0] uint8_out
 );
 
   logic               sign;

@@ -35,8 +35,8 @@ module logic_conv #(
   localparam integer M = KERNEL_SIZE;
   localparam integer LINE_PTR = $clog2(M + 1);
 
-  logic       rtg_valid;
   logic       rtg_ready;
+  logic       rtg_valid;
   logic       rtg_last;
   logic [7:0] rtg_data;
 
@@ -51,8 +51,8 @@ module logic_conv #(
       .cfg_len(cfg_len),
       .rd_desc_req(rd_desc_req),
       .s_axis_rx(s_axis_rx),
-      .m_valid(rtg_valid),
       .m_ready(rtg_ready),
+      .m_valid(rtg_valid),
       .m_last(rtg_last),
       .m_data(rtg_data),
       .run(run)
@@ -73,9 +73,9 @@ module logic_conv #(
       .clk(clk),
       .rst_n(rst_n),
       .s_valid(rtg_valid),
-      .s_ready(rtg_ready),
-      .s_data(rtg_data),
       .s_last(rtg_last),
+      .s_data(rtg_data),
+      .s_ready(rtg_ready),
       .m_ready(demux_ready),
       .m_valid(demux_valid),
       .m_data(demux_data),
@@ -115,26 +115,26 @@ module logic_conv #(
       .rst_n(rst_n),
       .write_sel(write_sel),
       .line_valid(line_valid),
-      .s_ready(demux_ready),
       .s_valid(demux_valid),
       .s_data(lb_data),
+      .s_ready(demux_ready),
       .m_ready(mux_ready),
       .m_valid(mux_valid),
       .m_data(mux_data)
   );
 
-  logic [M-1:0] w_valid;
-  logic [M-1:0] w_ready;
-  logic [ 31:0] w_data;
+  logic [M-1:0] ker_ready;
+  logic [M-1:0] ker_valid;
+  logic [ 31:0] ker_data;
 
-  weight_loader #(
+  kernel_loader #(
       .KERNEL_SIZE(KERNEL_SIZE)
-  ) u_weight_loader (
+  ) u_kernel_loader (
       .clk(clk),
       .rst_n(rst_n),
-      .row_valid(w_valid),
-      .row_ready(w_ready),
-      .data(w_data)
+      .row_ready(ker_ready),
+      .row_valid(ker_valid),
+      .data(ker_data)
   );
 
   logic [M-1:0] conv_s_ready;
@@ -149,14 +149,15 @@ module logic_conv #(
       ) u_conv1d (
           .clk(clk),
           .rst_n(rst_n),
-          .w_valid(w_valid[i]),
-          .w_ready(w_ready[i]),
-          .w_data(w_data),
+          .win_clear(col_addr == IMAGE_WIDTH - 1 && mux_valid),
+          .ker_valid(ker_valid[i]),
+          .ker_data(ker_data),
+          .ker_ready(ker_ready[i]),
           .s_valid(mux_valid),
-          .s_ready(conv_s_ready[i]),
           .s_data(mux_data[i]),
-          .m_valid(conv_valid[i]),
+          .s_ready(conv_s_ready[i]),
           .m_ready(conv_ready),
+          .m_valid(conv_valid[i]),
           .m_data(conv_data[i])
       );
     end
@@ -174,8 +175,8 @@ module logic_conv #(
       .clk    (clk),
       .rst_n  (rst_n),
       .s_valid(&conv_valid),
-      .s_ready(conv_ready),
       .s_data (conv_data),
+      .s_ready(conv_ready),
       .m_ready(add_ready),
       .m_valid(add_valid),
       .m_data (add_data)
@@ -197,8 +198,8 @@ module logic_conv #(
       .clk(clk),
       .rst_n(rst_n),
       .s_valid(add_valid),
-      .s_ready(add_ready),
       .s_data(add_data),
+      .s_ready(add_ready),
       .rd_req(ddr_rd_reg),
       .rd_addr(ddr_rd_addr),
       .rd_buf_sel(ddr_rd_buf_sel),
@@ -209,7 +210,7 @@ module logic_conv #(
       .done_sel(buf_done_sel)
   );
 
-  grayscale_to_ddr3_stream #(
+  grayscale_stream #(
       .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
       .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
       .AXI_LEN_WIDTH(AXI_LEN_WIDTH),
@@ -217,7 +218,7 @@ module logic_conv #(
       .KERNEL_SIZE(KERNEL_SIZE),
       .IMAGE_WIDTH(IMAGE_WIDTH),
       .IMAGE_HEIGHT(IMAGE_HEIGHT)
-  ) u_grayscale_to_ddr3 (
+  ) u_grayscale_stream (
       .clk(clk),
       .rst_n(rst_n),
       .cfg_write_addr(cfg_write_addr),

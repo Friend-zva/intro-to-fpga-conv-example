@@ -23,12 +23,12 @@ module line_buffer #(
       valid_pipe <= {valid_pipe[RD_LATENCY-2:0], (write_en && addr == IMAGE_WIDTH - 1)};
 
       if (valid_pipe[RD_LATENCY-1]) begin
-        line_valid <= 1'b1;  // always valid, `write_en' controls the lines
+        line_valid <= 1'b1;  // always valid once set to 1, lines driven by `write_en`
       end
     end
   end
 
-  Gowin_SP sp (
+  Gowin_SP u_line (
       .dout (tx_data),
       .clk  (clk),
       .oce  (1'b1),

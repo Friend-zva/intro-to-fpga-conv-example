@@ -1,4 +1,4 @@
-module grayscale_to_ddr3_stream #(
+module grayscale_stream #(
     parameter integer AXI_DATA_WIDTH = 256,
     parameter integer AXI_ADDR_WIDTH = 29,
     parameter integer AXI_LEN_WIDTH  = 20,

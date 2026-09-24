@@ -7,8 +7,8 @@ module demux_1_to_m1 #(
     input logic rst_n,
 
     input  logic       s_valid,
-    input  logic [7:0] s_data,
     input  logic       s_last,
+    input  logic [7:0] s_data,
     output logic       s_ready,
 
     input  logic       m_ready,

@@ -1,4 +1,4 @@
-module weight_loader #(
+module kernel_loader #(
     parameter integer KERNEL_SIZE = 3,
     parameter integer RD_LATENCY  = 2
 ) (
@@ -18,7 +18,7 @@ module weight_loader #(
   logic                           req_valid_pipe[RD_LATENCY];
   logic [$clog2(KERNEL_SIZE)-1:0] req_row_pipe  [RD_LATENCY];
 
-  Gowin_ROM u_weights_rom (
+  Gowin_ROM u_kernel (
       .dout (out),
       .clk  (clk),
       .oce  (1'b1),

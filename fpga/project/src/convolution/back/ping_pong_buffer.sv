@@ -6,8 +6,8 @@ module ping_pong_buffer #(
     input logic rst_n,
 
     input  logic       s_valid,
-    output logic       s_ready,
     input  logic [7:0] s_data,
+    output logic       s_ready,
 
     input logic                           rd_req,
     input logic                           rd_buf_sel,
