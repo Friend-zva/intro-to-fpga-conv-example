@@ -103,6 +103,8 @@ module rgb_to_grayscale_stream #(
                 state  <= DONE_STATE;
               end
             end
+          end else begin
+            m_valid <= 1'b0;
           end
         end
 

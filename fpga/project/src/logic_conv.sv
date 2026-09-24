@@ -37,6 +37,7 @@ module logic_conv #(
 
   logic       rtg_valid;
   logic       rtg_ready;
+  logic       rtg_last;
   logic [7:0] rtg_data;
 
   rgb_to_grayscale_stream #(
@@ -52,15 +53,18 @@ module logic_conv #(
       .s_axis_rx(s_axis_rx),
       .m_valid(rtg_valid),
       .m_ready(rtg_ready),
+      .m_last(rtg_last),
       .m_data(rtg_data),
       .run(run)
   );
 
-  logic                           demux_ready;
-  logic [                    7:0] demux_data;
   logic [                    M:0] write_en;
   logic [           LINE_PTR-1:0] write_sel;
   logic [$clog2(IMAGE_WIDTH)-1:0] col_addr;
+
+  logic                           demux_ready;
+  logic                           demux_valid;
+  logic [                    7:0] demux_data;
 
   demux_1_to_m1 #(
       .IMAGE_WIDTH(IMAGE_WIDTH),
@@ -71,7 +75,9 @@ module logic_conv #(
       .s_valid(rtg_valid),
       .s_ready(rtg_ready),
       .s_data(rtg_data),
+      .s_last(rtg_last),
       .m_ready(demux_ready),
+      .m_valid(demux_valid),
       .m_data(demux_data),
       .write_en(write_en),
       .write_sel(write_sel),
@@ -98,25 +104,24 @@ module logic_conv #(
     end
   endgenerate
 
+  logic       mux_ready;
   logic       mux_valid;
   logic [7:0] mux_data  [M];
 
   mux_m1_to_m #(
       .M(M)
   ) u_mux_m1_to_m (
+      .clk(clk),
+      .rst_n(rst_n),
       .write_sel(write_sel),
-      .rx_data  (lb_data),
-      .tx_data  (mux_data)
+      .line_valid(line_valid),
+      .s_ready(demux_ready),
+      .s_valid(demux_valid),
+      .s_data(lb_data),
+      .m_ready(mux_ready),
+      .m_valid(mux_valid),
+      .m_data(mux_data)
   );
-
-  always_comb begin
-    mux_valid = 1'b1;
-    for (int j = 0; j < M + 1; j++) begin
-      if (j != int'(write_sel)) begin
-        mux_valid &= line_valid[j];
-      end
-    end
-  end
 
   logic [M-1:0] w_valid;
   logic [M-1:0] w_ready;
@@ -135,8 +140,7 @@ module logic_conv #(
   logic [M-1:0] conv_s_ready;
   logic         conv_ready;
   logic [M-1:0] conv_valid;
-  logic         conv_valid_full;
-  logic [  7:0] conv_data       [M];
+  logic [  7:0] conv_data    [M];
 
   generate
     for (i = 0; i < M; i++) begin : gen_conv1d
@@ -158,8 +162,7 @@ module logic_conv #(
     end
   endgenerate
 
-  assign demux_ready = &conv_s_ready;
-  assign conv_valid_full = &conv_valid;
+  assign mux_ready = &conv_s_ready;
 
   logic       add_ready;
   logic       add_valid;
@@ -170,7 +173,7 @@ module logic_conv #(
   ) u_adder (
       .clk    (clk),
       .rst_n  (rst_n),
-      .s_valid(conv_valid_full),
+      .s_valid(&conv_valid),
       .s_ready(conv_ready),
       .s_data (conv_data),
       .m_ready(add_ready),
