@@ -6,7 +6,8 @@ module line_buffer #(
     input logic rst_n,
 
     input logic [$clog2(IMAGE_WIDTH)-1:0] addr,
-    input logic [7:0] rx_data,
+
+    input  logic [7:0] rx_data,
     output logic [7:0] tx_data,
 
     input  logic write_en,

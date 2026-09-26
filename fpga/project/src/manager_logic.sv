@@ -2,28 +2,28 @@ module manager_logic #(
     parameter integer AXI_ADDR_WIDTH = 29,
     parameter integer AXI_LEN_WIDTH  = 20
 ) (
-    input clk,
-    input rst_n,
+    input logic clk,
+    input logic rst_n,
 
     // BAR2 PCIe Sgdma
-    input             user_cs,
-    input      [63:0] user_address,
-    input             user_rw,
-    input      [31:0] user_wr_data,
-    output reg        user_rd_valid,
-    output reg [31:0] user_rd_data,
-    input      [63:0] h2c_overhead_reg,
+    input  logic        user_cs,
+    input  logic [63:0] user_address,
+    input  logic        user_rw,
+    input  logic [31:0] user_wr_data,
+    output logic        user_rd_valid,
+    output logic [31:0] user_rd_data,
+    input  logic [63:0] h2c_overhead_reg,
 
     // AXI DMA Descriptors
     taxi_dma_desc_if.req_src desc_h2c,
     taxi_dma_desc_if.req_src desc_c2h,
 
     // Logic Core Config
-    output reg [AXI_ADDR_WIDTH-1:0] lcore_read_addr,
-    output reg [AXI_ADDR_WIDTH-1:0] lcore_write_addr,
-    output reg [ AXI_LEN_WIDTH-1:0] lcore_len,
-    output reg                      lcore_run,
-    input                           lcore_done
+    output logic [AXI_ADDR_WIDTH-1:0] lcore_read_addr,
+    output logic [AXI_ADDR_WIDTH-1:0] lcore_write_addr,
+    output logic [ AXI_LEN_WIDTH-1:0] lcore_len,
+    output logic                      lcore_run,
+    input  logic                      lcore_done
 );
   //* All lengths in bytes.
 

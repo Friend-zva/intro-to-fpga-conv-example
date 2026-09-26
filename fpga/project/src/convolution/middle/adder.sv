@@ -4,12 +4,12 @@ module adder #(
     input logic clk,
     input logic rst_n,
 
-    input logic s_valid,
-    input logic [7:0] s_data[KERNEL_SIZE],
-    output logic s_ready,
+    input  logic       s_valid,
+    input  logic [7:0] s_data [KERNEL_SIZE],
+    output logic       s_ready,
 
-    input logic m_ready,
-    output logic m_valid,
+    input  logic       m_ready,
+    output logic       m_valid,
     output logic [7:0] m_data
 );
 

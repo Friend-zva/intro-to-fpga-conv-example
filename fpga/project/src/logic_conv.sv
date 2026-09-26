@@ -1,19 +1,19 @@
 module logic_conv #(
     parameter integer AXI_DATA_WIDTH = 256,
     parameter integer AXI_ADDR_WIDTH = 29,
-    parameter integer AXI_LEN_WIDTH = 20,
+    parameter integer AXI_LEN_WIDTH  = 20,
     parameter integer AXI_STRB_WIDTH = 32,
-    parameter integer KERNEL_SIZE = 3,
-    parameter integer IMAGE_WIDTH = 640,
-    parameter integer IMAGE_HEIGHT = 480
+    parameter integer KERNEL_SIZE    = 3,
+    parameter integer IMAGE_WIDTH    = 640,
+    parameter integer IMAGE_HEIGHT   = 480
 ) (
-    input clk,
-    input rst_n,
+    input logic clk,
+    input logic rst_n,
 
     // Config
-    input [AXI_ADDR_WIDTH-1:0] cfg_read_addr,
-    input [AXI_ADDR_WIDTH-1:0] cfg_write_addr,
-    input [ AXI_LEN_WIDTH-1:0] cfg_len,
+    input logic [AXI_ADDR_WIDTH-1:0] cfg_read_addr,
+    input logic [AXI_ADDR_WIDTH-1:0] cfg_write_addr,
+    input logic [ AXI_LEN_WIDTH-1:0] cfg_len,
 
     // AXI DMA Descriptors
     taxi_dma_desc_if.req_src rd_desc_req,
@@ -25,8 +25,8 @@ module logic_conv #(
     taxi_axis_if.src m_axis_tx,
 
     // Control
-    input      run,
-    output reg done
+    input  logic run,
+    output logic done
 );
 
   assign rd_desc_req.req_tag = '0;
@@ -64,6 +64,7 @@ module logic_conv #(
 
   logic                           demux_ready;
   logic                           demux_valid;
+  logic                           demux_last;
   logic [                    7:0] demux_data;
 
   demux_1_to_m1 #(
@@ -78,6 +79,7 @@ module logic_conv #(
       .s_ready(rtg_ready),
       .m_ready(demux_ready),
       .m_valid(demux_valid),
+      .m_last(demux_last),
       .m_data(demux_data),
       .write_en(write_en),
       .write_sel(write_sel),
@@ -106,6 +108,7 @@ module logic_conv #(
 
   logic       mux_ready;
   logic       mux_valid;
+  logic       mux_last;
   logic [7:0] mux_data  [M];
 
   mux_m1_to_m #(
@@ -116,10 +119,12 @@ module logic_conv #(
       .write_sel(write_sel),
       .line_valid(line_valid),
       .s_valid(demux_valid),
+      .s_last(demux_last),
       .s_data(lb_data),
       .s_ready(demux_ready),
       .m_ready(mux_ready),
       .m_valid(mux_valid),
+      .m_last(mux_last),
       .m_data(mux_data)
   );
 
@@ -143,17 +148,17 @@ module logic_conv #(
   logic [  7:0] conv_data    [M];
 
   generate
-    for (i = 0; i < M; i++) begin : gen_conv1d
+    for (i = 0; i < M; i++) begin : gen_conv1ds
       conv1d #(
           .KERNEL_SIZE(KERNEL_SIZE)
       ) u_conv1d (
           .clk(clk),
           .rst_n(rst_n),
-          .win_clear(col_addr == IMAGE_WIDTH - 1 && mux_valid),
           .ker_valid(ker_valid[i]),
           .ker_data(ker_data),
           .ker_ready(ker_ready[i]),
           .s_valid(mux_valid),
+          .s_last(mux_last),
           .s_data(mux_data[i]),
           .s_ready(conv_s_ready[i]),
           .m_ready(conv_ready),
@@ -189,8 +194,9 @@ module logic_conv #(
   logic                           buf_valid;
   logic [                    7:0] buf_data;
 
-  logic buf_done, buf_done_sel;
-  logic buf_done_ready;
+  logic                           buf_done;
+  logic                           buf_done_sel;
+  logic                           buf_done_ready;
 
   ping_pong_buffer #(
       .IMAGE_WIDTH(IMAGE_WIDTH - 2 * (KERNEL_SIZE / 2))

@@ -14,6 +14,7 @@
             <Signal capture_enable="true">u_logic_conv/rd_desc_req_req_ready</Signal>
             <Signal capture_enable="true">u_logic_conv/s_axis_rx_tready</Signal>
             <Signal capture_enable="true">u_logic_conv/s_axis_rx_tvalid</Signal>
+            <Signal capture_enable="true">u_logic_conv/s_axis_rx_tlast</Signal>
             <Bus capture_enable="true" name="u_logic_conv/s_axis_rx_tdata[7:0]">
                 <Signal>u_logic_conv/s_axis_rx_tdata[7]</Signal>
                 <Signal>u_logic_conv/s_axis_rx_tdata[6]</Signal>
@@ -26,6 +27,7 @@
             </Bus>
             <Signal capture_enable="true">u_logic_conv/rtg_ready</Signal>
             <Signal capture_enable="true">u_logic_conv/rtg_valid</Signal>
+            <Signal capture_enable="true">u_logic_conv/rtg_last</Signal>
             <Bus capture_enable="true" name="u_logic_conv/rtg_data[7:0]">
                 <Signal>u_logic_conv/rtg_data[7]</Signal>
                 <Signal>u_logic_conv/rtg_data[6]</Signal>
@@ -116,6 +118,7 @@
             </Bus>
             <Signal capture_enable="true">u_logic_conv/mux_ready</Signal>
             <Signal capture_enable="true">u_logic_conv/mux_valid</Signal>
+            <Signal capture_enable="true">u_logic_conv/mux_last</Signal>
             <Bus capture_enable="true" name="u_logic_conv/mux_data[0][7:0]">
                 <Signal>u_logic_conv/mux_data[0][7]</Signal>
                 <Signal>u_logic_conv/mux_data[0][6]</Signal>
@@ -126,11 +129,21 @@
                 <Signal>u_logic_conv/mux_data[0][1]</Signal>
                 <Signal>u_logic_conv/mux_data[0][0]</Signal>
             </Bus>
-            <Signal capture_enable="true">u_logic_conv/gen_conv1d[0].u_conv1d/win_clear</Signal>
-            <Bus capture_enable="true" name="w_done[2:0]" restorename="group_0[2:0]">
-                <Signal>u_logic_conv/gen_conv1d[0].u_conv1d/w_done</Signal>
-                <Signal>u_logic_conv/gen_conv1d[1].u_conv1d/w_done</Signal>
-                <Signal>u_logic_conv/gen_conv1d[2].u_conv1d/w_done</Signal>
+            <Bus capture_enable="true" name="u_logic_conv/gen_conv1ds[0].u_conv1d/u_window/cnt[1:0]">
+              <Signal capture_enable="true">u_logic_conv/gen_conv1ds[0].u_conv1d/u_window/cnt[1]</Signal>
+              <Signal capture_enable="true">u_logic_conv/gen_conv1ds[0].u_conv1d/u_window/cnt[0]</Signal>
+            </Bus>
+            <Signal capture_enable="true">u_logic_conv/gen_conv1ds[1].u_conv1d/win_ready</Signal>
+            <Signal capture_enable="true">u_logic_conv/gen_conv1ds[1].u_conv1d/win_valid</Signal>
+            <Bus capture_enable="true" name="u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][7:0]">
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][7]</Signal>
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][6]</Signal>
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][5]</Signal>
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][4]</Signal>
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][3]</Signal>
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][2]</Signal>
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][1]</Signal>
+                <Signal>u_logic_conv/gen_conv1ds[1].u_conv1d/win_data[1][0]</Signal>
             </Bus>
             <Bus capture_enable="true" name="u_logic_conv/conv_valid[3:0]">
                 <Signal>u_logic_conv/conv_valid[2]</Signal>
@@ -241,9 +254,9 @@
             </Bus>
             <Signal capture_enable="true">u_axi_dma_pcie_sgdma/wr_desc_req_req_valid</Signal>
             <Signal capture_enable="true">u_axi_dma_pcie_sgdma/wr_desc_req_req_ready</Signal>
-            <Signal capture_enable="true">u_logic_conv/m_axis_tx_tlast</Signal>
-            <Signal capture_enable="true">u_logic_conv/m_axis_tx_tvalid</Signal>
             <Signal capture_enable="true">u_logic_conv/m_axis_tx_tready</Signal>
+            <Signal capture_enable="true">u_logic_conv/m_axis_tx_tvalid</Signal>
+            <Signal capture_enable="true">u_logic_conv/m_axis_tx_tlast</Signal>
             <Bus capture_enable="false" name="u_logic_conv/s_axis_rx_tdata[14:8]">
                 <Signal>u_logic_conv/s_axis_rx_tdata[14]</Signal>
                 <Signal>u_logic_conv/s_axis_rx_tdata[13]</Signal>
@@ -306,5 +319,5 @@
             <Expression>M0</Expression>
         </Expressions>
     </AoCore>
-    <GAO_ID>0111110100101001</GAO_ID>
+    <GAO_ID>0011010101110101</GAO_ID>
 </GAO_CONFIG>

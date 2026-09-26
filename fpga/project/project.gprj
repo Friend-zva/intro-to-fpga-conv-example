@@ -15,8 +15,8 @@
         <File path="src/convolution/middle/adder.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/middle/conv1d.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/middle/float_mult_byte.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/middle/scalar_product.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/middle/kernel_loader.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/middle/scalar_product.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/middle/window.sv" type="file.verilog" enable="1"/>
         <File path="src/ddr3_memory_interface/ddr3_memory_interface.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_pll/gowin_pll.v" type="file.verilog" enable="1"/>
@@ -46,7 +46,7 @@
         <File path="src/top.sv" type="file.verilog" enable="1"/>
         <File path="src/project.cst" type="file.cst" enable="1"/>
         <File path="src/project.sdc" type="file.sdc" enable="1"/>
-        <File path="src/gao/logic_conv.rao" type="file.gao" enable="0"/>
+        <File path="src/gao/logic_conv.rao" type="file.gao" enable="1"/>
         <File path="src/kernel.mi" type="file.other" enable="1"/>
     </FileList>
 </Project>

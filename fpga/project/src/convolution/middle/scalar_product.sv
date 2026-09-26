@@ -1,5 +1,5 @@
 module scalar_product #(
-    parameter integer VECTOR_SIZE = 4
+    parameter integer VECTOR_SIZE = 3
 ) (
     input logic [31:0] vector[VECTOR_SIZE],
     input logic [7:0] uint8_in[VECTOR_SIZE],

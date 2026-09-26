@@ -1,6 +1,6 @@
 module demux_1_to_m1 #(
-    parameter integer IMAGE_WIDTH = 640,
     parameter integer M           = 3,
+    parameter integer IMAGE_WIDTH = 640,
     parameter integer RD_LATENCY  = 2
 ) (
     input logic clk,
@@ -13,6 +13,7 @@ module demux_1_to_m1 #(
 
     input  logic       m_ready,
     output logic       m_valid,
+    output logic       m_last,
     output logic [7:0] m_data,
 
     output logic [            M:0] write_en,
@@ -36,11 +37,7 @@ module demux_1_to_m1 #(
       write_sel_raw <= '0;
     end else begin
       if (s_fire || last_fire) begin
-        if (addr == IMAGE_WIDTH - 1) begin
-          addr <= '0;
-        end else begin
-          addr <= addr + 1;
-        end
+        addr <= (addr == IMAGE_WIDTH - 1) ? '0 : addr + 1;
       end
 
       if (s_fire && addr == IMAGE_WIDTH - 1) begin
@@ -69,6 +66,7 @@ module demux_1_to_m1 #(
 
   assign s_ready = m_ready && !last_run && !last_done;
   assign m_valid = s_fire || last_fire;
+  assign m_last  = addr == IMAGE_WIDTH - 1;
   assign m_data  = s_data;
 
   always_comb begin

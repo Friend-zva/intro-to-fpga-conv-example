@@ -3,13 +3,13 @@ module conv1d #(
 ) (
     input logic clk,
     input logic rst_n,
-    input logic win_clear,
 
     input  logic        ker_valid,
     input  logic [31:0] ker_data,
     output logic        ker_ready,
 
     input  logic       s_valid,
+    input  logic       s_last,
     input  logic [7:0] s_data,
     output logic       s_ready,
 
@@ -45,9 +45,9 @@ module conv1d #(
   ) u_window (
       .clk(clk),
       .rst_n(rst_n),
-      .clear(win_clear),
-      .s_data(s_data),
       .s_valid(s_valid && ker_done),
+      .s_last(s_last),
+      .s_data(s_data),
       .s_ready(s_ready),
       .m_ready(win_ready),
       .m_valid(win_valid),

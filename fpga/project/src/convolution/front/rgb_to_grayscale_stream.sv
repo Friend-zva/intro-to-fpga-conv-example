@@ -3,21 +3,21 @@ module rgb_to_grayscale_stream #(
     parameter integer AXI_ADDR_WIDTH = 29,
     parameter integer AXI_LEN_WIDTH  = 20
 ) (
-    input clk,
-    input rst_n,
+    input logic clk,
+    input logic rst_n,
 
-    input [AXI_ADDR_WIDTH-1:0] cfg_read_addr,
-    input [ AXI_LEN_WIDTH-1:0] cfg_len,
+    input logic [AXI_ADDR_WIDTH-1:0] cfg_read_addr,
+    input logic [ AXI_LEN_WIDTH-1:0] cfg_len,
 
     taxi_dma_desc_if.req_src rd_desc_req,
     taxi_axis_if.snk s_axis_rx,
 
-    input              m_ready,
+    input  logic       m_ready,
     output logic       m_valid,
     output logic       m_last,
     output logic [7:0] m_data,
 
-    input run
+    input logic run
 );
 
   assign rd_desc_req.req_src_addr = cfg_read_addr;
