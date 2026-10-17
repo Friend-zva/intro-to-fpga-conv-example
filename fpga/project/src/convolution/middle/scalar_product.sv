@@ -8,16 +8,13 @@ module scalar_product #(
 
   logic [7:0] temp[VECTOR_SIZE];
 
-  genvar i;
-  generate
-    for (i = 0; i < VECTOR_SIZE; i++) begin : gen_mult
-      float_mult_byte float_mult (
-          .float_in (vector[i]),
-          .uint8_in (uint8_in[i]),
-          .uint8_out(temp[i])
-      );
-    end
-  endgenerate
+  for (genvar i = 0; i < VECTOR_SIZE; i++) begin : gen_mult
+    float_mult_byte float_mult (
+        .float_in (vector[i]),
+        .uint8_in (uint8_in[i]),
+        .uint8_out(temp[i])
+    );
+  end
 
   int unsigned sum;
   always_comb begin

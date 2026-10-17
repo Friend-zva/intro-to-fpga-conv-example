@@ -52,25 +52,22 @@ module ping_pong_buffer #(
 
   logic [7:0] bank_data[2];
 
-  genvar b;
-  generate
-    for (b = 0; b < 2; b++) begin : gen_bank
-      wire wr_bank_sel = (wr_bank == b[0]);
-      wire wr_bank_en = s_valid && s_ready && wr_bank_sel;
-      wire [$clog2(IMAGE_WIDTH)-1:0] bank_addr = wr_bank_en ? wr_addr : rd_addr;
+  for (genvar b = 0; b < 2; b++) begin : gen_banks
+    wire wr_bank_sel = (wr_bank == b[0]);
+    wire wr_bank_en = s_valid && s_ready && wr_bank_sel;
+    wire [$clog2(IMAGE_WIDTH)-1:0] bank_addr = wr_bank_en ? wr_addr : rd_addr;
 
-      Gowin_SP u_bank (
-          .dout (bank_data[b]),
-          .clk  (clk),
-          .oce  (1'b1),
-          .ce   (1'b1),
-          .reset(~rst_n),
-          .wre  (wr_bank_en),
-          .ad   (bank_addr),
-          .din  (s_data)
-      );
-    end
-  endgenerate
+    Gowin_SP u_bank (
+        .dout (bank_data[b]),
+        .clk  (clk),
+        .oce  (1'b1),
+        .ce   (1'b1),
+        .reset(~rst_n),
+        .wre  (wr_bank_en),
+        .ad   (bank_addr),
+        .din  (s_data)
+    );
+  end
 
   logic valid_pipe[RD_LATENCY];
 
