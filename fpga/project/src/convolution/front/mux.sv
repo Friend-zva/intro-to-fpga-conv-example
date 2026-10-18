@@ -35,8 +35,15 @@ module mux_m1_to_m #(
       valid_pipe <= '0;
       last_pipe  <= '0;
     end else begin
-      valid_pipe <= {valid_pipe[RD_LATENCY-2:0], s_valid};
-      last_pipe  <= {last_pipe[RD_LATENCY-2:0], s_last};
+      valid_pipe[0] <= s_valid;
+      for (int i = 1; i < RD_LATENCY; i++) begin
+        valid_pipe[i] <= valid_pipe[i-1];
+      end
+
+      last_pipe[0] <= s_last;
+      for (int i = 1; i < RD_LATENCY; i++) begin
+        last_pipe[i] <= last_pipe[i-1];
+      end
     end
   end
 

@@ -29,17 +29,14 @@ module rgb_to_grayscale_stream #(
 
   logic [COUNT_PIXELS*8-1:0] pixels;
 
-  genvar i;
-  generate
-    for (i = 0; i < COUNT_PIXELS; i = i + 1) begin : gen_pixels
-      wire [ 7:0] r = s_axis_rx.tdata[i*32+0+:8];
-      wire [ 7:0] g = s_axis_rx.tdata[i*32+8+:8];
-      wire [ 7:0] b = s_axis_rx.tdata[i*32+16+:8];
+  for (genvar i = 0; i < COUNT_PIXELS; i = i + 1) begin : gen_pixels
+    wire [ 7:0] r = s_axis_rx.tdata[i*32+0+:8];
+    wire [ 7:0] g = s_axis_rx.tdata[i*32+8+:8];
+    wire [ 7:0] b = s_axis_rx.tdata[i*32+16+:8];
 
-      wire [15:0] grayscale = (r * 8'd77) + (g * 8'd150) + (b * 8'd29);
-      assign pixels[i*8+:8] = grayscale[15:8];
-    end
-  endgenerate
+    wire [15:0] grayscale = (r * 8'd77) + (g * 8'd150) + (b * 8'd29);
+    assign pixels[i*8+:8] = grayscale[15:8];
+  end
 
   logic                 done;
   logic                 busy;
