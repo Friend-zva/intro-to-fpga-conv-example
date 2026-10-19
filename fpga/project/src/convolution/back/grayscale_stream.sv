@@ -12,19 +12,19 @@ module grayscale_stream #(
 
     input logic [AXI_ADDR_WIDTH-1:0] cfg_write_addr,
 
-    taxi_dma_desc_if.req_src wr_desc_req,
-    taxi_axis_if.src m_axis_tx,
-
-    output logic                                             rd_req,
-    output logic                                             rd_buf_sel,
-    output logic [$clog2(IMAGE_WIDTH-2*(KERNEL_SIZE/2))-1:0] rd_addr,
-
     input logic       s_valid,
     input logic [7:0] s_data,
 
-    input  logic buf_done,
-    input  logic buf_done_sel,
-    output logic buf_done_ready
+    taxi_dma_desc_if.req_src wr_desc_req,
+    taxi_axis_if.src m_axis_tx,
+
+    input  logic ppb_done,
+    input  logic ppb_done_sel,
+    output logic ppb_done_ready,
+
+    output logic                                             rd_req,
+    output logic                                             rd_sel,
+    output logic [$clog2(IMAGE_WIDTH-2*(KERNEL_SIZE/2))-1:0] rd_addr
 );
 
   localparam integer PAD = KERNEL_SIZE / 2;
@@ -46,7 +46,7 @@ module grayscale_stream #(
   } state_t;
   state_t state;
 
-  assign buf_done_ready = (state == IDLE);
+  assign ppb_done_ready = (state == IDLE);
   assign rd_req = (state == PACK) && !s_valid;
 
   always_ff @(posedge clk or negedge rst_n) begin
@@ -61,13 +61,13 @@ module grayscale_stream #(
       m_axis_tx.tvalid <= 1'b0;
       m_axis_tx.tlast <= 1'b0;
 
-      rd_buf_sel <= 1'b0;
+      rd_sel <= 1'b0;
       beat_data <= '0;
     end else begin
       case (state)
         IDLE: begin
-          if (buf_done) begin
-            rd_buf_sel               <= buf_done_sel;
+          if (ppb_done) begin
+            rd_sel                   <= ppb_done_sel;
             byte_cnt                 <= '0;
             beat_cnt                 <= '0;
             beat_data                <= '0;

@@ -29,16 +29,26 @@ module logic_conv #(
     output logic done
 );
 
+  if (IMAGE_WIDTH < 1 || IMAGE_WIDTH > 640) begin : fatal_image_width
+    $fatal(0, "Error: IMAGE_WIDTH must be between 1 and depth SP (instance %m)");
+  end
+  if (KERNEL_SIZE < 1 || KERNEL_SIZE > 3) begin : fatal_kernel_size
+    $fatal(0, "Error: KERNEL_SIZE must be between 1 and $sqrt(depth ROM) (instance %m)");
+  end
+
   assign rd_desc_req.req_tag = '0;
   assign wr_desc_req.req_tag = '0;
 
   localparam integer M = KERNEL_SIZE;
   localparam integer LINE_PTR = $clog2(M + 1);
+  localparam integer RD_LATENCY = 2;  // `pipeline` read mode
 
   logic       rtg_ready;
   logic       rtg_valid;
   logic       rtg_last;
   logic [7:0] rtg_data;
+
+  logic       ppb_done_ready;
 
   rgb_to_grayscale_stream #(
       .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
@@ -52,24 +62,26 @@ module logic_conv #(
       .rd_desc_req(rd_desc_req),
       .s_axis_rx(s_axis_rx),
       .m_ready(rtg_ready),
+      // .m_ready(rtg_ready && ppb_done_ready),
       .m_valid(rtg_valid),
       .m_last(rtg_last),
       .m_data(rtg_data),
       .run(run)
   );
 
-  logic [                    M:0] write_en;
-  logic [           LINE_PTR-1:0] write_sel;
-  logic [$clog2(IMAGE_WIDTH)-1:0] col_addr;
-
   logic                           demux_ready;
   logic                           demux_valid;
   logic                           demux_last;
   logic [                    7:0] demux_data;
 
+  logic [                    M:0] write_en;
+  logic [           LINE_PTR-1:0] write_sel;
+  logic [$clog2(IMAGE_WIDTH)-1:0] col_addr;
+
   demux_1_to_m1 #(
+      .M(M),
       .IMAGE_WIDTH(IMAGE_WIDTH),
-      .M(M)
+      .RD_LATENCY(RD_LATENCY)
   ) u_demux_1_to_m1 (
       .clk(clk),
       .rst_n(rst_n),
@@ -89,22 +101,20 @@ module logic_conv #(
   logic [7:0] lb_data    [M+1];
   logic [M:0] line_valid;
 
-  genvar i;
-  generate
-    for (i = 0; i < M + 1; i++) begin : gen_buffers
-      line_buffer #(
-          .IMAGE_WIDTH(IMAGE_WIDTH)
-      ) u_line_buffer (
-          .clk(clk),
-          .rst_n(rst_n),
-          .addr(col_addr),
-          .rx_data(demux_data),
-          .tx_data(lb_data[i]),
-          .write_en(write_en[i]),
-          .line_valid(line_valid[i])
-      );
-    end
-  endgenerate
+  for (genvar i = 0; i < M + 1; i++) begin : gen_buffers
+    line_buffer #(
+        .IMAGE_WIDTH(IMAGE_WIDTH),
+        .RD_LATENCY (RD_LATENCY)
+    ) u_line_buffer (
+        .clk       (clk),
+        .rst_n     (rst_n),
+        .addr      (col_addr),
+        .rx_data   (demux_data),
+        .tx_data   (lb_data[i]),
+        .write_en  (write_en[i]),
+        .line_valid(line_valid[i])
+    );
+  end
 
   logic       mux_ready;
   logic       mux_valid;
@@ -112,7 +122,8 @@ module logic_conv #(
   logic [7:0] mux_data  [M];
 
   mux_m1_to_m #(
-      .M(M)
+      .M(M),
+      .RD_LATENCY(RD_LATENCY)
   ) u_mux_m1_to_m (
       .clk(clk),
       .rst_n(rst_n),
@@ -133,7 +144,8 @@ module logic_conv #(
   logic [ 31:0] ker_data;
 
   kernel_loader #(
-      .KERNEL_SIZE(KERNEL_SIZE)
+      .KERNEL_SIZE(KERNEL_SIZE),
+      .RD_LATENCY (RD_LATENCY)
   ) u_kernel_loader (
       .clk(clk),
       .rst_n(rst_n),
@@ -147,26 +159,24 @@ module logic_conv #(
   logic [M-1:0] conv_valid;
   logic [  7:0] conv_data    [M];
 
-  generate
-    for (i = 0; i < M; i++) begin : gen_conv1ds
-      conv1d #(
-          .KERNEL_SIZE(KERNEL_SIZE)
-      ) u_conv1d (
-          .clk(clk),
-          .rst_n(rst_n),
-          .ker_valid(ker_valid[i]),
-          .ker_data(ker_data),
-          .ker_ready(ker_ready[i]),
-          .s_valid(mux_valid),
-          .s_last(mux_last),
-          .s_data(mux_data[i]),
-          .s_ready(conv_s_ready[i]),
-          .m_ready(conv_ready),
-          .m_valid(conv_valid[i]),
-          .m_data(conv_data[i])
-      );
-    end
-  endgenerate
+  for (genvar i = 0; i < M; i++) begin : gen_conv1ds
+    conv1d #(
+        .KERNEL_SIZE(KERNEL_SIZE)
+    ) u_conv1d (
+        .clk(clk),
+        .rst_n(rst_n),
+        .ker_valid(ker_valid[i]),
+        .ker_data(ker_data),
+        .ker_ready(ker_ready[i]),
+        .s_valid(mux_valid),
+        .s_last(mux_last),
+        .s_data(mux_data[i]),
+        .s_ready(conv_s_ready[i]),
+        .m_ready(conv_ready),
+        .m_valid(conv_valid[i]),
+        .m_data(conv_data[i])
+    );
+  end
 
   assign mux_ready = &conv_s_ready;
 
@@ -187,33 +197,33 @@ module logic_conv #(
       .m_data (add_data)
   );
 
+  logic                           ppb_valid;
+  logic [                    7:0] ppb_data;
+
+  logic                           ppb_done;
+  logic                           ppb_done_sel;
+
   logic                           ddr_rd_reg;
-  logic                           ddr_rd_buf_sel;
+  logic                           ddr_rd_ppb_sel;
   logic [$clog2(IMAGE_WIDTH)-1:0] ddr_rd_addr;
 
-  logic                           buf_valid;
-  logic [                    7:0] buf_data;
-
-  logic                           buf_done;
-  logic                           buf_done_sel;
-  logic                           buf_done_ready;
-
   ping_pong_buffer #(
-      .IMAGE_WIDTH(IMAGE_WIDTH - 2 * (KERNEL_SIZE / 2))
+      .IMAGE_WIDTH(IMAGE_WIDTH - 2 * (KERNEL_SIZE / 2)),
+      .RD_LATENCY (RD_LATENCY)
   ) u_ping_pong_buffer (
       .clk(clk),
       .rst_n(rst_n),
       .s_valid(add_valid),
       .s_data(add_data),
       .s_ready(add_ready),
+      .m_valid(ppb_valid),
+      .m_data(ppb_data),
       .rd_req(ddr_rd_reg),
+      .rd_sel(ddr_rd_ppb_sel),
       .rd_addr(ddr_rd_addr),
-      .rd_buf_sel(ddr_rd_buf_sel),
-      .m_valid(buf_valid),
-      .m_data(buf_data),
-      .done(buf_done),
-      .done_ready(buf_done_ready),
-      .done_sel(buf_done_sel)
+      .done(ppb_done),
+      .done_ready(ppb_done_ready),
+      .done_sel(ppb_done_sel)
   );
 
   grayscale_stream #(
@@ -228,16 +238,16 @@ module logic_conv #(
       .clk(clk),
       .rst_n(rst_n),
       .cfg_write_addr(cfg_write_addr),
+      .s_valid(ppb_valid),
+      .s_data(ppb_data),
       .wr_desc_req(wr_desc_req),
       .m_axis_tx(m_axis_tx),
-      .buf_done(buf_done),
-      .buf_done_ready(buf_done_ready),
-      .buf_done_sel(buf_done_sel),
+      .ppb_done(ppb_done),
+      .ppb_done_ready(ppb_done_ready),
+      .ppb_done_sel(ppb_done_sel),
       .rd_req(ddr_rd_reg),
-      .rd_addr(ddr_rd_addr),
-      .rd_buf_sel(ddr_rd_buf_sel),
-      .s_valid(buf_valid),
-      .s_data(buf_data)
+      .rd_sel(ddr_rd_ppb_sel),
+      .rd_addr(ddr_rd_addr)
   );
 
   logic [$clog2(IMAGE_HEIGHT)-1:0] wr_status_cnt;

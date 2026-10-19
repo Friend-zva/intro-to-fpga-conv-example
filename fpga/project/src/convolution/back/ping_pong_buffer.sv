@@ -9,17 +9,21 @@ module ping_pong_buffer #(
     input  logic [7:0] s_data,
     output logic       s_ready,
 
-    input logic                           rd_req,
-    input logic                           rd_buf_sel,
-    input logic [$clog2(IMAGE_WIDTH)-1:0] rd_addr,
-
     output logic       m_valid,
     output logic [7:0] m_data,
+
+    input logic                           rd_req,
+    input logic                           rd_sel,
+    input logic [$clog2(IMAGE_WIDTH)-1:0] rd_addr,
 
     input  logic done_ready,
     output logic done,
     output logic done_sel
 );
+
+  if (RD_LATENCY < 1) begin : fatal_latency
+    $fatal(0, "Error: RD_LATENCY must be more than 0");
+  end
 
   logic [$clog2(IMAGE_WIDTH)-1:0] wr_addr;
   logic wr_bank;
@@ -48,7 +52,8 @@ module ping_pong_buffer #(
   end
 
   assign done    = done_all[wr_bank];
-  assign s_ready = !(&done_all);
+  // assign s_ready = !(&done_all);
+  assign s_ready = !done;
 
   logic [7:0] bank_data[2];
 
@@ -85,6 +90,6 @@ module ping_pong_buffer #(
   end
 
   assign m_valid = valid_pipe[RD_LATENCY-1];
-  assign m_data  = bank_data[rd_buf_sel];
+  assign m_data  = bank_data[rd_sel];
 
 endmodule
