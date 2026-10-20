@@ -1,0 +1,66 @@
+name: Host-side Action
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    paths:
+      - "host/**"
+      - ".clang-format"
+      - ".github/workflows/host.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "host/**"
+      - ".clang-format"
+      - ".github/workflows/host.yml"
+
+jobs:
+  format:
+    name: Formatter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Install requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
+      - name: Run clang-format
+        run: make -C host format
+
+  lint:
+    name: Linter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Install requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-tidy
+
+      - name: Run clang-tidy
+        run: make -C host lint
+
+  build:
+    name: Build
+    needs: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Install requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
+
+      - name: Run gcc compiler
+        run: make -C host app
