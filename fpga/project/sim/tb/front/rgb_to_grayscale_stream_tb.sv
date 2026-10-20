@@ -46,8 +46,6 @@ module rgb_to_grayscale_stream_tb ();
 
   int errors;
   int checks;
-  int checked_pixels;
-  logic [AXI_DATA_WIDTH-1:0] beat;
 
   task check_value(input logic [63:0] got, input logic [63:0] exp, input int cycle,
                    input string tag);
@@ -58,14 +56,14 @@ module rgb_to_grayscale_stream_tb ();
     end
   endtask
 
-  function automatic logic [7:0] expect_gray(input logic [31:0] rgbx);
+  function logic [7:0] expect_gray(input logic [31:0] rgbx);
     int unsigned sum;
     sum = int'(rgbx[7:0]) * 77 + int'(rgbx[15:8]) * 150 + int'(rgbx[23:16]) * 29;
     return 8'(sum / 256);
   endfunction
 
   // Little-endian RGBX: black, white, red, green, blue, gray, two mixed colors
-  function automatic logic [31:0] get_pixel(input int index);
+  function logic [31:0] get_pixel(input int index);
     case (index % 8)
       0: return {8'hA5, 8'd0, 8'd0, 8'd0};
       1: return {8'hA5, 8'd255, 8'd255, 8'd255};
@@ -82,6 +80,9 @@ module rgb_to_grayscale_stream_tb ();
     clk = 1'b0;
     forever #5 clk = ~clk;
   end
+
+  int exp_pixel_cnt;
+  logic [AXI_DATA_WIDTH-1:0] exp_pixels;
 
   task reset_dut();
     @(negedge clk);
@@ -132,9 +133,9 @@ module rgb_to_grayscale_stream_tb ();
       $display("Test %0d: AXI input beat", beat + 1);
       @(negedge clk);
       for (int i = 0; i < COUNT_PIXELS; i++) begin
-        beat[i*32+:32] = get_pixel(beat * 5 + i);
+        exp_pixels[i*32+:32] = get_pixel(beat * 5 + i);
       end
-      s_axis_rx.tdata = beat;
+      s_axis_rx.tdata = exp_pixels;
       s_axis_rx.tvalid = 1'b1;
       s_axis_rx.tlast = (beat == 1);
       m_ready = 1'b0;
@@ -157,9 +158,10 @@ module rgb_to_grayscale_stream_tb ();
       for (int i = 0; i < COUNT_PIXELS; i++) begin
         @(posedge clk);
         check_value(m_valid, 1'b1, int'($time / 10), "m_valid");
-        check_value(64'(m_data), 64'(expect_gray(beat[i*32+:32])), int'($time / 10), "m_data");
+        check_value(64'(m_data), 64'(expect_gray(exp_pixels[i*32+:32])), int'($time / 10),
+                    "m_data");
         check_value(m_last, beat == 1 && i == COUNT_PIXELS - 1, int'($time / 10), "m_last");
-        checked_pixels++;
+        exp_pixel_cnt++;
       end
 
       @(posedge clk);

@@ -1,10 +1,12 @@
 `timescale 1ns / 1ps
 
-module tb_line_buffer ();
+module line_buffer_tb ();
   parameter integer IMAGE_WIDTH = 64;
   parameter integer RD_LATENCY = 2;
 
   localparam integer ADDR_W = $clog2(IMAGE_WIDTH);
+
+  localparam integer DEBUG_PARAM = 1;  // temp
 
   logic              clk;
   logic              rst_n;
@@ -63,16 +65,33 @@ module tb_line_buffer ();
     end
     reset_dut();
 
-    $display("Test 1: Line validity latency");
-    for (int i = -2; i <= RD_LATENCY + 2; i++) begin
+    $display("Test 1: Write line");
+    for (int i = 0; i < IMAGE_WIDTH; i++) begin
       @(negedge clk);
-
-      addr     = (i < 0) ? (IMAGE_WIDTH + i) : i;
+      addr = i;
       write_en = 1'b1;
-      rx_data  = i + 2;
+      rx_data = i[7:0];
 
       @(posedge clk);
-      check_value(line_valid, i >= RD_LATENCY, i + 2, "line_valid");
+      check_value(line_valid, 1'b0, i, "line_valid");
+      check_value(tx_data, 8'd0, i, "line_valid");
+    end
+
+    @(negedge clk);
+    write_en = 1'b0;
+
+    repeat (RD_LATENCY + DEBUG_PARAM) @(posedge clk);
+    check_value(line_valid, 1'b1, IMAGE_WIDTH, "line_valid");
+
+    $display("Test 2: Read line");
+    for (int i = 0; i < IMAGE_WIDTH + RD_LATENCY; i++) begin
+      @(negedge clk);
+      addr = i;
+
+      @(posedge clk);
+      if (i > RD_LATENCY) begin
+        check_value(tx_data, i - RD_LATENCY, i, "tx_data");
+      end
     end
 
     if (errors == 0) begin
