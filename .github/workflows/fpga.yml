@@ -1,0 +1,60 @@
+name: FPGA-side Action
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    paths:
+      - "fpga/**"
+      - ".verilog_format"
+      - ".github/workflows/fpga.yml"
+  pull_request:
+    branches: ["**"]
+    paths:
+      - "fpga/**"
+      - ".verilog_format"
+      - ".github/workflows/fpga.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-fpga
+  cancel-in-progress: true
+
+jobs:
+  format:
+    name: Formatter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Run verible formatter
+        run: make -C fpga format
+
+  lint:
+    name: Linter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Run verible linter
+        run: make -C fpga lint
+
+  test:
+    name: Test
+    needs: lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Install requirements
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iverilog make
+
+      - name: Run iverilog simulator
+        run: make -C fpga all

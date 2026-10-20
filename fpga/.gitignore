@@ -4,6 +4,7 @@
 *.fs
 
 loaders/
+project/sim/build
 
 project/impl/
 project/*.gprj.user
