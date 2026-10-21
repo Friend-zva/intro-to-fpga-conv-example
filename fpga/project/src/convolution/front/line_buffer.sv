@@ -13,7 +13,8 @@ module line_buffer #(
     input  logic write_en,
     output logic line_valid
 );
-  localparam integer LATENCY_VALID = RD_LATENCY + 1; // `write_sel` updates 1 cycle after the current line ends and a new one begins
+  // `write_sel` updates 1 cycle after the current line ends and a new one begins
+  localparam integer LATENCY_VALID = RD_LATENCY + 1;
 
   if (RD_LATENCY < 1) begin : fatal_latency
     $fatal(0, "Error: RD_LATENCY must be more than 0");

@@ -2,7 +2,7 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 UseTab: Never
 TabWidth: 4
-ColumnLimit: 90
+ColumnLimit: 85
 IndentCaseLabels: true
 IncludeBlocks: Preserve
 InsertNewlineAtEOF: true

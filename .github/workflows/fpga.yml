@@ -28,6 +28,9 @@ jobs:
       - name: Clone project
         uses: actions/checkout@v4
 
+      - name: Install Verible
+        uses: chipsalliance/verible-actions-common/install-verible@main
+
       - name: Run verible formatter
         run: make -C fpga format
 
@@ -38,6 +41,9 @@ jobs:
     steps:
       - name: Clone project
         uses: actions/checkout@v4
+
+      - name: Install Verible
+        uses: chipsalliance/verible-actions-common/install-verible@main
 
       - name: Run verible linter
         run: make -C fpga lint
@@ -51,10 +57,8 @@ jobs:
       - name: Clone project
         uses: actions/checkout@v4
 
-      - name: Install requirements
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y iverilog make
+      - name: Install OSS CAD Suite
+        uses: YosysHQ/setup-oss-cad-suite@v4
 
       - name: Run iverilog simulator
         run: make -C fpga all
