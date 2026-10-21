@@ -13,26 +13,26 @@ module line_buffer #(
     input  logic write_en,
     output logic line_valid
 );
+  localparam integer LATENCY_VALID = RD_LATENCY + 1; // `write_sel` updates 1 cycle after the current line ends and a new one begins
 
   if (RD_LATENCY < 1) begin : fatal_latency
     $fatal(0, "Error: RD_LATENCY must be more than 0");
   end
 
-  logic [RD_LATENCY-1:0] valid_pipe;
+  logic [LATENCY_VALID-1:0] valid_pipe;
+  logic                     line_valid_rst;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      line_valid <= 1'b0;
       valid_pipe <= '0;
+      line_valid_rst <= 1'b0;
     end else begin
       valid_pipe[0] <= (write_en && addr == IMAGE_WIDTH - 1);
-      for (int i = 1; i < RD_LATENCY; i++) begin
+      for (int i = 1; i < LATENCY_VALID; i++) begin
         valid_pipe[i] <= valid_pipe[i-1];
       end
 
-      if (valid_pipe[RD_LATENCY-1]) begin
-        line_valid <= 1'b1;  // always valid once set to 1, lines driven by `write_en`
-      end
+      line_valid_rst <= line_valid;
     end
   end
 
@@ -46,5 +46,12 @@ module line_buffer #(
       .ad   (addr),
       .din  (rx_data)
   );
+
+  always_comb begin
+    line_valid = line_valid_rst;
+    if (valid_pipe[LATENCY_VALID-1]) begin
+      line_valid = 1'b1;  // always valid once set to 1, lines driven by `write_en`
+    end
+  end
 
 endmodule

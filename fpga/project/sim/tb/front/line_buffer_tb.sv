@@ -4,20 +4,18 @@ module line_buffer_tb ();
   parameter integer IMAGE_WIDTH = 64;
   parameter integer RD_LATENCY = 2;
 
-  localparam integer ADDR_W = $clog2(IMAGE_WIDTH);
+  localparam integer LATENCY_VALID = RD_LATENCY + 1;
 
-  localparam integer DEBUG_PARAM = 1;  // temp
+  logic                           clk;
+  logic                           rst_n;
 
-  logic              clk;
-  logic              rst_n;
+  logic [$clog2(IMAGE_WIDTH)-1:0] addr;
 
-  logic [ADDR_W-1:0] addr;
+  logic [                    7:0] rx_data;
+  logic [                    7:0] tx_data;
 
-  logic [       7:0] rx_data;
-  logic [       7:0] tx_data;
-
-  logic              write_en;
-  logic              line_valid;
+  logic                           write_en;
+  logic                           line_valid;
 
   line_buffer #(
       .IMAGE_WIDTH(IMAGE_WIDTH),
@@ -80,7 +78,7 @@ module line_buffer_tb ();
     @(negedge clk);
     write_en = 1'b0;
 
-    repeat (RD_LATENCY + DEBUG_PARAM) @(posedge clk);
+    repeat (LATENCY_VALID) @(posedge clk);
     check_value(line_valid, 1'b1, IMAGE_WIDTH, "line_valid");
 
     $display("Test 2: Read line");

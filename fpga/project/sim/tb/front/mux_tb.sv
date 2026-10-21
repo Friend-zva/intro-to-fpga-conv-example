@@ -78,12 +78,10 @@ module mux_tb ();
   logic [RD_LATENCY-1:0] exp_valid_pipe;
 
   initial begin
-
-    reset_dut();
-
     if (M < 1 || IMAGE_WIDTH < 2 || RD_LATENCY < 1) begin
       $fatal(1, "Invalid parameters: M >= 1, IMAGE_WIDTH >= 2, RD_LATENCY >= 1");
     end
+    reset_dut();
 
     $display("Test 1: Line selection and output data");
     for (int sel = 0; sel < N; sel++) begin
