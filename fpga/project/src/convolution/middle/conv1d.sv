@@ -45,7 +45,8 @@ module conv1d #(
   ) u_window (
       .clk(clk),
       .rst_n(rst_n),
-      .s_valid(s_valid && ker_done),
+      .run(ker_done),
+      .s_valid(s_valid),
       .s_last(s_last),
       .s_data(s_data),
       .s_ready(s_ready),

@@ -204,7 +204,7 @@ module logic_conv #(
   logic                           ppb_done_sel;
 
   logic                           ddr_rd_reg;
-  logic                           ddr_rd_ppb_sel;
+  logic                           ddr_rd_sel;
   logic [$clog2(IMAGE_WIDTH)-1:0] ddr_rd_addr;
 
   ping_pong_buffer #(
@@ -219,7 +219,7 @@ module logic_conv #(
       .m_valid(ppb_valid),
       .m_data(ppb_data),
       .rd_req(ddr_rd_reg),
-      .rd_sel(ddr_rd_ppb_sel),
+      .rd_sel(ddr_rd_sel),
       .rd_addr(ddr_rd_addr),
       .done(ppb_done),
       .done_ready(ppb_done_ready),
@@ -246,7 +246,7 @@ module logic_conv #(
       .ppb_done_ready(ppb_done_ready),
       .ppb_done_sel(ppb_done_sel),
       .rd_req(ddr_rd_reg),
-      .rd_sel(ddr_rd_ppb_sel),
+      .rd_sel(ddr_rd_sel),
       .rd_addr(ddr_rd_addr)
   );
 

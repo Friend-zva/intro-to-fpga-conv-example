@@ -13,8 +13,6 @@ module demux_ppb_tb ();
   localparam integer IMAGE_WIDTH_REAL = IMAGE_WIDTH - 2 * (KERNEL_SIZE / 2);
   localparam integer LATENCY_ADD = RD_LATENCY + KERNEL_SIZE + 1;
 
-  localparam integer DEBUG_PARAM = 1;  // temp
-
   logic              clk;
   logic              rst_n;
 
@@ -244,8 +242,7 @@ module demux_ppb_tb ();
       @(posedge clk);
       check_value(mux_valid, (col >= RD_LATENCY && col < IMAGE_WIDTH + RD_LATENCY), col,
                   "mux_valid");
-      check_value(add_valid,
-                  (col >= LATENCY_ADD && col < IMAGE_WIDTH_REAL + LATENCY_ADD - DEBUG_PARAM), col,
+      check_value(add_valid, (col >= LATENCY_ADD && col < IMAGE_WIDTH_REAL + LATENCY_ADD), col,
                   "add_valid");
 
       if (add_valid && add_ready) begin
@@ -254,11 +251,10 @@ module demux_ppb_tb ();
       end
     end
 
-    if (DEBUG_PARAM && exp_pixel_cnt == 68)
-      check_value(exp_pixel_cnt, IMAGE_WIDTH_REAL, IMAGE_WIDTH_REAL + LATENCY_ADD, "exp_pixel_cnt");
+    check_value(exp_pixel_cnt, IMAGE_WIDTH_REAL, IMAGE_WIDTH_REAL + LATENCY_ADD, "exp_pixel_cnt");
 
     @(posedge clk);
-    if (DEBUG_PARAM && exp_pixel_cnt == 68) check_value(done, 1'b1, 0, "done");
+    check_value(done, 1'b1, 0, "done");
     check_value(done_sel, 1'b0, 0, "done_sel");
 
     $display("Test 2: Convolution result readback");
@@ -271,8 +267,7 @@ module demux_ppb_tb ();
       @(posedge clk);
       check_value(ppb_valid, cycle >= RD_LATENCY, cycle, "ppb_valid");
       if (cycle >= RD_LATENCY) begin
-        if (DEBUG_PARAM && cycle - RD_LATENCY != 61)
-          check_value(ppb_data, expect_sum(cycle - RD_LATENCY), cycle - RD_LATENCY, "ppb_data");
+        check_value(ppb_data, expect_sum(cycle - RD_LATENCY), cycle - RD_LATENCY, "ppb_data");
       end
     end
 

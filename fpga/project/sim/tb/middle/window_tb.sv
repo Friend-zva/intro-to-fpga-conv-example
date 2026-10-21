@@ -100,7 +100,9 @@ module window_tb ();
     s_last  = 1'b0;
 
     @(posedge clk);
-    check_value(m_valid, 1'b0, 1, "m_valid");
+    check_value(m_valid, 1'b1, 1, "m_valid");
+    @(posedge clk);
+    check_value(m_valid, 1'b0, 2, "m_valid");
 
     $display("Test 3: Window refill");
     for (int cycle = 0; cycle < IMAGE_WIDTH; cycle++) begin
@@ -129,7 +131,7 @@ module window_tb ();
       s_data = cycle[7:0];
 
       @(posedge clk);
-      check_value(m_valid, (cycle >= WINDOW_SIZE), cycle, "m_valid");
+      check_value(m_valid, (cycle == 0 || cycle >= WINDOW_SIZE), cycle, "m_valid");
     end
 
     if (errors == 0) begin

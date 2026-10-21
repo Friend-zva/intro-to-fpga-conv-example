@@ -3,6 +3,7 @@ module window #(
 ) (
     input logic clk,
     input logic rst_n,
+    input logic run,
 
     input  logic       s_valid,
     input  logic       s_last,
@@ -16,7 +17,7 @@ module window #(
 
   logic [$clog2(WINDOW_SIZE)-1:0] cnt;
 
-  assign s_ready = !m_valid || m_ready;
+  assign s_ready = run && (!m_valid || m_ready);
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -26,7 +27,11 @@ module window #(
         m_data[i] <= '0;
       end
     end else begin
-      if (s_valid && s_ready) begin
+      if (m_valid && m_ready) begin
+        m_valid <= 1'b0;
+      end
+
+      if (run && s_valid && s_ready) begin
         for (int i = 0; i < WINDOW_SIZE - 1; i++) begin
           m_data[i] <= m_data[i+1];
         end
@@ -36,16 +41,11 @@ module window #(
           cnt <= cnt + 1;
         end
 
-        if (cnt >= WINDOW_SIZE - 1) begin
-          m_valid <= 1'b1;
-        end
+        m_valid <= (cnt >= WINDOW_SIZE - 1);
 
         if (s_last) begin
           cnt <= '0;
-          m_valid <= 1'b0;
         end
-      end else if (m_ready) begin
-        m_valid <= 1'b0;
       end
     end
   end

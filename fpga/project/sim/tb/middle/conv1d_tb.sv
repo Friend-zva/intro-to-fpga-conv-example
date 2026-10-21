@@ -110,6 +110,7 @@ module conv1d_tb ();
         check_value(m_data, (cycle - 2) * KERNEL_SIZE, cycle, "m_data");
       end
     end
+
     reset_dut();
 
     $display("Test 2: Output backpressure");
@@ -120,12 +121,14 @@ module conv1d_tb ();
       @(posedge clk);
     end
 
+    @(negedge clk);
+    ker_valid = 1'b0;
+    m_ready   = 1'b0;
+
     for (int cycle = 0; cycle < KERNEL_SIZE + DUMMY; cycle++) begin
       @(negedge clk);
       s_valid = 1'b1;
-      ker_valid = 1'b0;
-      m_ready = 1'b0;
-      s_data = cycle + 1;
+      s_data  = cycle + 1;
 
       @(posedge clk);
       check_value(s_ready, (cycle < KERNEL_SIZE), cycle, "s_ready");

@@ -100,8 +100,7 @@ module kernel_loader_tb ();
 
     check_value(exp_weights_cnt, M2, 0, "exp_weights_cnt");
 
-    @(negedge clk);
-    rst_n = 1'b1;
+    reset_dut();
 
     $display("Test 2: Out-of-row addresses");
     for (int _row = -2; _row < KERNEL_SIZE; _row++) begin
