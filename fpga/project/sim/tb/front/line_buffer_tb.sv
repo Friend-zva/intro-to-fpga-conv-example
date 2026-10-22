@@ -1,33 +1,33 @@
 `timescale 1ns / 1ps
 
 module line_buffer_tb ();
-  parameter integer IMAGE_WIDTH = 64;
-  parameter integer RD_LATENCY = 2;
+  parameter int IMAGE_WIDTH = 64;
+  parameter int RD_LATENCY = 2;
 
-  localparam integer LATENCY_VALID = RD_LATENCY + 1;
+  localparam int LATENCY_VALID = RD_LATENCY + 1;
 
-  logic                           clk;
-  logic                           rst_n;
+  logic clk;
+  logic rst_n;
 
   logic [$clog2(IMAGE_WIDTH)-1:0] addr;
 
-  logic [                    7:0] rx_data;
-  logic [                    7:0] tx_data;
+  logic [7:0] rx_data;
+  logic [7:0] tx_data;
 
-  logic                           write_en;
-  logic                           line_valid;
+  logic write_en;
+  logic line_valid;
 
   line_buffer #(
-      .IMAGE_WIDTH(IMAGE_WIDTH),
-      .RD_LATENCY (RD_LATENCY)
+    .IMAGE_WIDTH(IMAGE_WIDTH),
+    .RD_LATENCY (RD_LATENCY)
   ) dut (
-      .clk(clk),
-      .rst_n(rst_n),
-      .addr(addr),
-      .rx_data(rx_data),
-      .tx_data(tx_data),
-      .write_en(write_en),
-      .line_valid(line_valid)
+    .clk       (clk),
+    .rst_n     (rst_n),
+    .addr      (addr),
+    .rx_data   (rx_data),
+    .tx_data   (tx_data),
+    .write_en  (write_en),
+    .line_valid(line_valid)
   );
 
   int errors;
@@ -66,9 +66,9 @@ module line_buffer_tb ();
     $display("Test 1: Write line");
     for (int i = 0; i < IMAGE_WIDTH; i++) begin
       @(negedge clk);
-      addr = i;
+      addr     = i;
       write_en = 1'b1;
-      rx_data = i[7:0];
+      rx_data  = i[7:0];
 
       @(posedge clk);
       check_value(line_valid, 1'b0, i, "line_valid");

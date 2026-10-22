@@ -1,35 +1,36 @@
-module demux_1_to_m1 #(
-    parameter integer M           = 3,
-    parameter integer IMAGE_WIDTH = 640,
-    parameter integer RD_LATENCY  = 2
+module demux_1_to_m1 #(  // verilog_lint: waive module-filename
+  parameter int M           = 3,
+  parameter int IMAGE_WIDTH = 640,
+  parameter int RD_LATENCY  = 2
 ) (
-    input logic clk,
-    input logic rst_n,
+  input logic clk,
+  input logic rst_n,
 
-    input  logic       s_valid,
-    input  logic       s_last,
-    input  logic [7:0] s_data,
-    output logic       s_ready,
+  input  logic       s_valid,
+  input  logic       s_last,
+  input  logic [7:0] s_data,
+  output logic       s_ready,
 
-    input  logic       m_ready,
-    output logic       m_valid,
-    output logic       m_last,
-    output logic [7:0] m_data,
+  input  logic       m_ready,
+  output logic       m_valid,
+  output logic       m_last,
+  output logic [7:0] m_data,
 
-    output logic [            M:0] write_en,
-    output logic [$clog2(M+1)-1:0] write_sel,
+  output logic [            M:0] write_en,
+  output logic [$clog2(M+1)-1:0] write_sel,
 
-    output logic [$clog2(IMAGE_WIDTH)-1:0] addr
+  output logic [$clog2(IMAGE_WIDTH)-1:0] addr
 );
-  localparam integer SEL_W = $clog2(M + 1);
+  localparam int SEL_W = $clog2(M + 1);
 
-  logic [                  SEL_W-1:0] write_sel_raw;
-  wire                                s_fire = s_valid && s_ready;
+  logic [SEL_W-1:0] write_sel_raw;
 
-  logic                               last_run;
-  logic                               last_done;
-  logic [$clog2(IMAGE_WIDTH + 1)-1:0] last_cnt;
-  wire                                last_fire = last_run && m_ready;
+  logic s_fire;
+  assign s_fire = s_valid && s_ready;
+
+  logic last_run, last_done;
+  logic last_fire;
+  assign last_fire = last_run && m_ready;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -45,6 +46,8 @@ module demux_1_to_m1 #(
       end
     end
   end
+
+  logic [$clog2(IMAGE_WIDTH + 1)-1:0] last_cnt;
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin

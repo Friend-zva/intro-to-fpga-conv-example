@@ -1,30 +1,30 @@
 `timescale 1ns / 1ps
 
 module kernel_loader_tb ();
-  parameter integer KERNEL_SIZE = 3;
-  parameter integer RD_LATENCY = 2;
+  parameter int KERNEL_SIZE = 3;
+  parameter int RD_LATENCY = 2;
 
-  localparam integer M2 = KERNEL_SIZE * KERNEL_SIZE;
+  localparam int M2 = KERNEL_SIZE * KERNEL_SIZE;
 
-  localparam integer DUMMY = 2;
+  localparam int DUMMY = 2;
 
-  logic                   clk;
-  logic                   rst_n;
+  logic clk;
+  logic rst_n;
 
   logic [KERNEL_SIZE-1:0] row_ready;
   logic [KERNEL_SIZE-1:0] row_valid;
 
-  logic [           31:0] data;
+  logic [31:0] data;
 
   kernel_loader #(
-      .KERNEL_SIZE(KERNEL_SIZE),
-      .RD_LATENCY (RD_LATENCY)
+    .KERNEL_SIZE(KERNEL_SIZE),
+    .RD_LATENCY (RD_LATENCY)
   ) dut (
-      .clk(clk),
-      .rst_n(rst_n),
-      .row_ready(row_ready),
-      .row_valid(row_valid),
-      .data(data)
+    .clk      (clk),
+    .rst_n    (rst_n),
+    .row_ready(row_ready),
+    .row_valid(row_valid),
+    .data     (data)
   );
 
   int errors;

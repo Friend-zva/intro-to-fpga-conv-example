@@ -1,28 +1,29 @@
 module conv1d #(
-    parameter integer KERNEL_SIZE = 3
+  parameter int KERNEL_SIZE = 3
 ) (
-    input logic clk,
-    input logic rst_n,
+  input logic clk,
+  input logic rst_n,
 
-    input  logic        ker_valid,
-    input  logic [31:0] ker_data,
-    output logic        ker_ready,
+  input  logic        ker_valid,
+  input  logic [31:0] ker_data,
+  output logic        ker_ready,
 
-    input  logic       s_valid,
-    input  logic       s_last,
-    input  logic [7:0] s_data,
-    output logic       s_ready,
+  input  logic       s_valid,
+  input  logic       s_last,
+  input  logic [7:0] s_data,
+  output logic       s_ready,
 
-    input  logic       m_ready,
-    output logic       m_valid,
-    output logic [7:0] m_data
+  input  logic       m_ready,
+  output logic       m_valid,
+  output logic [7:0] m_data
 );
 
   int          weights_cnt;
   logic [31:0] ker_vector  [KERNEL_SIZE];
 
+  logic ker_done;
+  assign ker_done  = (weights_cnt == KERNEL_SIZE);
   assign ker_ready = (weights_cnt < KERNEL_SIZE);
-  wire ker_done = (weights_cnt == KERNEL_SIZE);
 
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
@@ -36,33 +37,35 @@ module conv1d #(
     end
   end
 
-  wire        win_ready = m_ready && ker_done;
+  logic       win_ready;
   logic       win_valid;
-  logic [7:0] win_data                        [KERNEL_SIZE];
+  logic [7:0] win_data  [KERNEL_SIZE];
+  assign win_ready = m_ready && ker_done;
 
   window #(
-      .WINDOW_SIZE(KERNEL_SIZE)
+    .WINDOW_SIZE(KERNEL_SIZE)
   ) u_window (
-      .clk(clk),
-      .rst_n(rst_n),
-      .run(ker_done),
-      .s_valid(s_valid),
-      .s_last(s_last),
-      .s_data(s_data),
-      .s_ready(s_ready),
-      .m_ready(win_ready),
-      .m_valid(win_valid),
-      .m_data(win_data)
+    .clk    (clk),
+    .rst_n  (rst_n),
+    .run    (ker_done),
+    .s_valid(s_valid),
+    .s_last (s_last),
+    .s_data (s_data),
+    .s_ready(s_ready),
+    .m_ready(win_ready),
+    .m_valid(win_valid),
+    .m_data (win_data)
   );
 
   scalar_product #(
-      .VECTOR_SIZE(KERNEL_SIZE)
+    .VECTOR_SIZE(KERNEL_SIZE)
   ) u_scalar_product (
-      .vector(ker_vector),
-      .uint8_in(win_data),
-      .uint8_out(m_data)
+    .vector   (ker_vector),
+    .uint8_in (win_data),
+    .uint8_out(m_data)
   );
 
-  assign m_valid = win_valid && ker_done;
+  // assign m_valid = win_valid && ker_done;
+  assign m_valid = win_valid;
 
 endmodule

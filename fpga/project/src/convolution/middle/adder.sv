@@ -1,16 +1,16 @@
 module adder #(
-    parameter integer KERNEL_SIZE = 3
+  parameter int KERNEL_SIZE = 3
 ) (
-    input logic clk,
-    input logic rst_n,
+  input logic clk,
+  input logic rst_n,
 
-    input  logic       s_valid,
-    input  logic [7:0] s_data [KERNEL_SIZE],
-    output logic       s_ready,
+  input  logic       s_valid,
+  input  logic [7:0] s_data [KERNEL_SIZE],
+  output logic       s_ready,
 
-    input  logic       m_ready,
-    output logic       m_valid,
-    output logic [7:0] m_data
+  input  logic       m_ready,
+  output logic       m_valid,
+  output logic [7:0] m_data
 );
 
   int unsigned sum;

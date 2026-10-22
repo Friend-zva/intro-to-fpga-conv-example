@@ -1,36 +1,34 @@
 `timescale 1ns / 1ps
 
 module window_tb ();
-  parameter integer WINDOW_SIZE = 3;
+  parameter int WINDOW_SIZE = 3;
 
-  localparam integer IMAGE_WIDTH = 64;
+  localparam int IMAGE_WIDTH = 64;
 
-  logic       clk;
-  logic       rst_n;
-  logic       run;
+  logic clk;
+  logic rst_n;
+  logic run;
 
   logic       s_valid;
   logic       s_last;
   logic [7:0] s_data;
-  logic       s_ready;
 
   logic       m_ready;
   logic       m_valid;
   logic [7:0] m_data  [WINDOW_SIZE];
 
   window #(
-      .WINDOW_SIZE(WINDOW_SIZE)
+    .WINDOW_SIZE(WINDOW_SIZE)
   ) dut (
-      .clk(clk),
-      .rst_n(rst_n),
-      .run(run),
-      .s_valid(s_valid),
-      .s_last(s_last),
-      .s_data(s_data),
-      .s_ready(s_ready),
-      .m_ready(m_ready),
-      .m_valid(m_valid),
-      .m_data(m_data)
+    .clk    (clk),
+    .rst_n  (rst_n),
+    .run    (run),
+    .s_valid(s_valid),
+    .s_last (s_last),
+    .s_data (s_data),
+    .m_ready(m_ready),
+    .m_valid(m_valid),
+    .m_data (m_data)
   );
 
   int errors;
@@ -78,12 +76,17 @@ module window_tb ();
     $display("Test 1: Window fill");
     for (int cycle = 0; cycle < IMAGE_WIDTH; cycle++) begin
       @(negedge clk);
-      run = 1'b1;
+      run     = 1'b1;
       s_valid = 1'b1;
-      s_data = cycle[7:0];
+      s_data  = cycle[7:0];
 
       @(posedge clk);
       check_value(m_valid, (cycle >= WINDOW_SIZE), cycle, "m_valid");
+      if (m_valid) begin
+        for (int i = 0; i < WINDOW_SIZE; i++) begin
+          check_value(m_data[i], cycle - WINDOW_SIZE + i, cycle, "m_data");
+        end
+      end
     end
 
     $display("Test 2: Window flush");
@@ -107,9 +110,9 @@ module window_tb ();
     $display("Test 3: Window refill");
     for (int cycle = 0; cycle < IMAGE_WIDTH; cycle++) begin
       @(negedge clk);
-      run = 1'b1;
+      run     = 1'b1;
       s_valid = 1'b1;
-      s_data = cycle[7:0];
+      s_data  = cycle[7:0];
 
       @(posedge clk);
       check_value(m_valid, (cycle >= WINDOW_SIZE), cycle, "m_valid");
@@ -119,19 +122,24 @@ module window_tb ();
     @(negedge clk);
     s_valid = 1'b1;
     s_last  = 1'b1;
-    s_data  = 8'hFF;
+    s_data  = IMAGE_WIDTH;
     @(posedge clk);
     check_value(m_valid, 1'b1, 0, "m_valid");
 
     for (int cycle = 0; cycle < IMAGE_WIDTH; cycle++) begin
       @(negedge clk);
-      run = 1'b1;
+      run     = 1'b1;
       s_valid = 1'b1;
-      s_last = 1'b0;
-      s_data = cycle[7:0];
+      s_last  = 1'b0;
+      s_data  = cycle[7:0] + 1;
 
       @(posedge clk);
       check_value(m_valid, (cycle == 0 || cycle >= WINDOW_SIZE), cycle, "m_valid");
+      if (cycle == 0) begin
+        for (int i = 0; i < WINDOW_SIZE; i++) begin
+          check_value(m_data[i], IMAGE_WIDTH - WINDOW_SIZE + 1 + i, cycle, "m_data");
+        end
+      end
     end
 
     if (errors == 0) begin

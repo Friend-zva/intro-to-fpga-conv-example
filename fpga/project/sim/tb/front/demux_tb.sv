@@ -1,52 +1,49 @@
 `timescale 1ns / 1ps
 
 module demux_tb ();
-  parameter integer M = 3;
-  parameter integer IMAGE_WIDTH = 8;
-  parameter integer RD_LATENCY = 2;
+  parameter int M = 3;
+  parameter int IMAGE_WIDTH = 8;
+  parameter int RD_LATENCY = 2;
 
-  localparam integer N = M + 1;
-  localparam integer SEL_W = $clog2(N);
-  localparam integer ADDR_W = $clog2(IMAGE_WIDTH);
+  localparam int N = M + 1;
+  localparam int SEL_W = $clog2(N);
+  localparam int ADDR_W = $clog2(IMAGE_WIDTH);
 
-  localparam integer DUMMY = 3;
+  localparam int DUMMY = 3;
 
-  logic              clk;
-  logic              rst_n;
+  logic clk;
+  logic rst_n;
 
-  logic              s_valid;
-  logic              s_last;
-  logic [       7:0] s_data;
-  logic              s_ready;
+  logic       s_ready;
+  logic       s_valid;
+  logic       s_last;
+  logic [7:0] s_data;
 
-  logic              m_ready;
-  logic              m_valid;
-  logic              m_last;
-  logic [       7:0] m_data;
+  logic m_ready;
+  logic m_valid;
+  logic m_last;
 
   logic [       M:0] write_en;
   logic [ SEL_W-1:0] write_sel;
-
   logic [ADDR_W-1:0] addr;
 
   demux_1_to_m1 #(
-      .M(M),
-      .IMAGE_WIDTH(IMAGE_WIDTH),
-      .RD_LATENCY(RD_LATENCY)
+    .M          (M),
+    .IMAGE_WIDTH(IMAGE_WIDTH),
+    .RD_LATENCY (RD_LATENCY)
   ) dut (
-      .clk(clk),
-      .rst_n(rst_n),
-      .s_valid(s_valid),
-      .s_last(s_last),
-      .s_data(s_data),
-      .s_ready(s_ready),
-      .m_ready(m_ready),
-      .m_valid(m_valid),
-      .m_last(m_last),
-      .m_data(m_data),
-      .write_en(write_en),
-      .write_sel(write_sel),
-      .addr(addr)
+    .clk      (clk),
+    .rst_n    (rst_n),
+    .s_valid  (s_valid),
+    .s_last   (s_last),
+    .s_data   (s_data),
+    .s_ready  (s_ready),
+    .m_ready  (m_ready),
+    .m_valid  (m_valid),
+    .m_last   (m_last),
+    .write_en (write_en),
+    .write_sel(write_sel),
+    .addr     (addr)
   );
 
   int errors;

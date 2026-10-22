@@ -1,66 +1,66 @@
 `timescale 1ns / 1ps
 
 module demux_mux_tb ();
-  parameter integer M = 3;
-  parameter integer IMAGE_WIDTH = 64;
-  parameter integer RD_LATENCY = 2;
+  parameter int M = 3;
+  parameter int IMAGE_WIDTH = 64;
+  parameter int RD_LATENCY = 2;
 
-  localparam integer N = M + 1;
-  localparam integer ADDR_W = $clog2(IMAGE_WIDTH);
-  localparam integer SEL_W = $clog2(N);
+  localparam int N = M + 1;
+  localparam int ADDR_W = $clog2(IMAGE_WIDTH);
+  localparam int SEL_W = $clog2(N);
 
-  logic              clk;
-  logic              rst_n;
+  logic clk;
+  logic rst_n;
 
-  logic              s_valid;
-  logic              s_last;
-  logic [       7:0] s_data;
-  logic              s_ready;
+  logic       s_ready;
+  logic       s_valid;
+  logic       s_last;
+  logic [7:0] s_data;
 
-  logic              demux_ready;
-  logic              demux_valid;
-  logic              demux_last;
-  logic [       7:0] demux_data;
+  logic       demux_ready;
+  logic       demux_valid;
+  logic       demux_last;
+  logic [7:0] demux_data;
 
   logic [       M:0] write_en;
   logic [ SEL_W-1:0] write_sel;
   logic [ADDR_W-1:0] addr;
 
   demux_1_to_m1 #(
-      .M(M),
-      .IMAGE_WIDTH(IMAGE_WIDTH),
-      .RD_LATENCY(RD_LATENCY)
+    .M          (M),
+    .IMAGE_WIDTH(IMAGE_WIDTH),
+    .RD_LATENCY (RD_LATENCY)
   ) u_demux (
-      .clk(clk),
-      .rst_n(rst_n),
-      .s_valid(s_valid),
-      .s_last(s_last),
-      .s_data(s_data),
-      .s_ready(s_ready),
-      .m_ready(demux_ready),
-      .m_valid(demux_valid),
-      .m_last(demux_last),
-      .m_data(demux_data),
-      .write_en(write_en),
-      .write_sel(write_sel),
-      .addr(addr)
+    .clk      (clk),
+    .rst_n    (rst_n),
+    .s_valid  (s_valid),
+    .s_last   (s_last),
+    .s_data   (s_data),
+    .s_ready  (s_ready),
+    .m_ready  (demux_ready),
+    .m_valid  (demux_valid),
+    .m_last   (demux_last),
+    .m_data   (demux_data),
+    .write_en (write_en),
+    .write_sel(write_sel),
+    .addr     (addr)
   );
 
-  logic [7:0] lb_data    [M+1];
   logic [M:0] line_valid;
+  logic [7:0] lb_data    [M+1];
 
   for (genvar i = 0; i < N; i++) begin : gen_buffers
     line_buffer #(
-        .IMAGE_WIDTH(IMAGE_WIDTH),
-        .RD_LATENCY (RD_LATENCY)
+      .IMAGE_WIDTH(IMAGE_WIDTH),
+      .RD_LATENCY (RD_LATENCY)
     ) u_line_buffer (
-        .clk(clk),
-        .rst_n(rst_n),
-        .addr(addr),
-        .rx_data(demux_data),
-        .tx_data(lb_data[i]),
-        .write_en(write_en[i]),
-        .line_valid(line_valid[i])
+      .clk       (clk),
+      .rst_n     (rst_n),
+      .addr      (addr),
+      .rx_data   (demux_data),
+      .tx_data   (lb_data[i]),
+      .write_en  (write_en[i]),
+      .line_valid(line_valid[i])
     );
   end
 
@@ -69,20 +69,20 @@ module demux_mux_tb ();
   logic [7:0] m_data  [M];
 
   mux_m1_to_m #(
-      .M(M),
-      .RD_LATENCY(RD_LATENCY)
+    .M         (M),
+    .RD_LATENCY(RD_LATENCY)
   ) u_mux (
-      .clk(clk),
-      .rst_n(rst_n),
-      .write_sel(write_sel),
-      .line_valid(line_valid),
-      .s_valid(demux_valid),
-      .s_last(demux_last),
-      .s_data(lb_data),
-      .s_ready(demux_ready),
-      .m_ready(m_ready),
-      .m_valid(m_valid),
-      .m_data(m_data)
+    .clk       (clk),
+    .rst_n     (rst_n),
+    .write_sel (write_sel),
+    .line_valid(line_valid),
+    .s_valid   (demux_valid),
+    .s_last    (demux_last),
+    .s_data    (lb_data),
+    .s_ready   (demux_ready),
+    .m_ready   (m_ready),
+    .m_valid   (m_valid),
+    .m_data    (m_data)
   );
 
   int errors;
@@ -155,7 +155,7 @@ module demux_mux_tb ();
       check_value(demux_valid, 1'b1, col, "demux_valid");
       check_value(m_valid, 1'b1, col, "m_valid");
       for (int line = 0; line < M; line++) begin
-        exp_data = ((col < RD_LATENCY) ? IMAGE_WIDTH : 0) + col - RD_LATENCY;
+        exp_data       = ((col < RD_LATENCY) ? IMAGE_WIDTH : 0) + col - RD_LATENCY;
         exp_demux_line = (col < RD_LATENCY) ? line : (line + 1);
         check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, col, "m_data");
       end
@@ -172,7 +172,7 @@ module demux_mux_tb ();
       check_value(m_valid, 1'b1, col, "m_valid");
 
       for (int line = 0; line < M; line++) begin
-        exp_data = ((col < RD_LATENCY) ? IMAGE_WIDTH : 0) + col - RD_LATENCY;
+        exp_data       = ((col < RD_LATENCY) ? IMAGE_WIDTH : 0) + col - RD_LATENCY;
         exp_demux_line = (col < RD_LATENCY) ? (line + 1) : (line + 2);
         check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, col, "m_data");
       end
@@ -185,7 +185,7 @@ module demux_mux_tb ();
       check_value(m_valid, 1'b1, tail, "m_valid");
 
       for (int line = 0; line < M; line++) begin
-        exp_data = IMAGE_WIDTH - RD_LATENCY + tail;
+        exp_data       = IMAGE_WIDTH - RD_LATENCY + tail;
         exp_demux_line = line + 2;
         check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, tail, "m_data");
       end

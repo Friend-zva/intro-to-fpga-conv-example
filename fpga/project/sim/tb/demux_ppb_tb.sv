@@ -1,167 +1,167 @@
 `timescale 1ns / 1ps
 
 module demux_ppb_tb ();
-  parameter integer M = 3;
-  parameter integer IMAGE_WIDTH = 64;
-  parameter integer RD_LATENCY = 2;
-  parameter integer KERNEL_SIZE = 3;
+  parameter int M = 3;
+  parameter int IMAGE_WIDTH = 64;
+  parameter int RD_LATENCY = 2;
+  parameter int KERNEL_SIZE = 3;
 
-  localparam integer N = M + 1;
-  localparam integer ADDR_W = $clog2(IMAGE_WIDTH);
-  localparam integer SEL_W = $clog2(N);
+  localparam int N = M + 1;
+  localparam int ADDR_W = $clog2(IMAGE_WIDTH);
+  localparam int SEL_W = $clog2(N);
 
-  localparam integer IMAGE_WIDTH_REAL = IMAGE_WIDTH - 2 * (KERNEL_SIZE / 2);
-  localparam integer LATENCY_ADD = RD_LATENCY + KERNEL_SIZE + 1;
+  localparam int IMAGE_WIDTH_REAL = IMAGE_WIDTH - 2 * (KERNEL_SIZE / 2);
+  localparam int LATENCY_ADD = RD_LATENCY + KERNEL_SIZE + 1;
 
-  logic              clk;
-  logic              rst_n;
+  logic clk;
+  logic rst_n;
 
-  logic              s_valid;
-  logic              s_last;
-  logic [       7:0] s_data;
-  logic              s_ready;
+  logic       s_ready;
+  logic       s_valid;
+  logic       s_last;
+  logic [7:0] s_data;
 
-  logic              demux_valid;
-  logic              demux_last;
-  logic [       7:0] demux_data;
-  logic              demux_ready;
+  logic       demux_ready;
+  logic       demux_valid;
+  logic       demux_last;
+  logic [7:0] demux_data;
 
   logic [       M:0] write_en;
   logic [ SEL_W-1:0] write_sel;
   logic [ADDR_W-1:0] addr;
 
   demux_1_to_m1 #(
-      .M          (M),
-      .IMAGE_WIDTH(IMAGE_WIDTH),
-      .RD_LATENCY (RD_LATENCY)
+    .M          (M),
+    .IMAGE_WIDTH(IMAGE_WIDTH),
+    .RD_LATENCY (RD_LATENCY)
   ) u_demux (
-      .clk      (clk),
-      .rst_n    (rst_n),
-      .s_valid  (s_valid),
-      .s_last   (s_last),
-      .s_data   (s_data),
-      .s_ready  (s_ready),
-      .m_ready  (demux_ready),
-      .m_valid  (demux_valid),
-      .m_last   (demux_last),
-      .m_data   (demux_data),
-      .write_en (write_en),
-      .write_sel(write_sel),
-      .addr     (addr)
+    .clk      (clk),
+    .rst_n    (rst_n),
+    .s_valid  (s_valid),
+    .s_last   (s_last),
+    .s_data   (s_data),
+    .s_ready  (s_ready),
+    .m_ready  (demux_ready),
+    .m_valid  (demux_valid),
+    .m_last   (demux_last),
+    .m_data   (demux_data),
+    .write_en (write_en),
+    .write_sel(write_sel),
+    .addr     (addr)
   );
 
-  logic [7:0] line_data  [N];
   logic [M:0] line_valid;
+  logic [7:0] line_data  [N];
 
   for (genvar i = 0; i < N; i++) begin : gen_line_buffers
     line_buffer #(
-        .IMAGE_WIDTH(IMAGE_WIDTH),
-        .RD_LATENCY (RD_LATENCY)
+      .IMAGE_WIDTH(IMAGE_WIDTH),
+      .RD_LATENCY (RD_LATENCY)
     ) u_line_buffer (
-        .clk       (clk),
-        .rst_n     (rst_n),
-        .addr      (addr),
-        .rx_data   (demux_data),
-        .tx_data   (line_data[i]),
-        .write_en  (write_en[i]),
-        .line_valid(line_valid[i])
+      .clk       (clk),
+      .rst_n     (rst_n),
+      .addr      (addr),
+      .rx_data   (demux_data),
+      .tx_data   (line_data[i]),
+      .write_en  (write_en[i]),
+      .line_valid(line_valid[i])
     );
   end
 
+  logic       mux_ready;
   logic       mux_valid;
   logic       mux_last;
   logic [7:0] mux_data  [M];
-  logic       mux_ready;
 
   mux_m1_to_m #(
-      .M         (M),
-      .RD_LATENCY(RD_LATENCY)
+    .M         (M),
+    .RD_LATENCY(RD_LATENCY)
   ) u_mux (
-      .clk       (clk),
-      .rst_n     (rst_n),
-      .write_sel (write_sel),
-      .line_valid(line_valid),
-      .s_valid   (demux_valid),
-      .s_last    (demux_last),
-      .s_data    (line_data),
-      .s_ready   (demux_ready),
-      .m_ready   (mux_ready),
-      .m_valid   (mux_valid),
-      .m_last    (mux_last),
-      .m_data    (mux_data)
+    .clk       (clk),
+    .rst_n     (rst_n),
+    .write_sel (write_sel),
+    .line_valid(line_valid),
+    .s_valid   (demux_valid),
+    .s_last    (demux_last),
+    .s_data    (line_data),
+    .s_ready   (demux_ready),
+    .m_ready   (mux_ready),
+    .m_valid   (mux_valid),
+    .m_last    (mux_last),
+    .m_data    (mux_data)
   );
 
-  logic         ker_valid;
-  logic [ 31:0] ker_data;
+  logic        ker_valid;
+  logic [31:0] ker_data;
 
+  logic         conv_ready;
   logic [M-1:0] conv_valid;
   logic [  7:0] conv_data  [M];
-  logic         conv_ready;
 
   for (genvar i = 0; i < M; i++) begin : gen_conv
     conv1d #(
-        .KERNEL_SIZE(KERNEL_SIZE)
+      .KERNEL_SIZE(KERNEL_SIZE)
     ) u_conv1d (
-        .clk      (clk),
-        .rst_n    (rst_n),
-        .ker_valid(ker_valid),
-        .ker_data (ker_data),
-        .s_valid  (mux_valid),
-        .s_last   (mux_last),
-        .s_data   (mux_data[i]),
-        .m_ready  (conv_ready),
-        .m_valid  (conv_valid[i]),
-        .m_data   (conv_data[i])
+      .clk      (clk),
+      .rst_n    (rst_n),
+      .ker_valid(ker_valid),
+      .ker_data (ker_data),
+      .s_valid  (mux_valid),
+      .s_last   (mux_last),
+      .s_data   (mux_data[i]),
+      .m_ready  (conv_ready),
+      .m_valid  (conv_valid[i]),
+      .m_data   (conv_data[i])
     );
   end
 
   assign mux_ready = 1'b1;
 
-  logic       add_valid;
   logic       add_ready;
+  logic       add_valid;
   logic [7:0] add_data;
 
   adder #(
-      .KERNEL_SIZE(KERNEL_SIZE)
+    .KERNEL_SIZE(KERNEL_SIZE)
   ) u_adder (
-      .clk    (clk),
-      .rst_n  (rst_n),
-      .s_valid(&conv_valid),
-      .s_data (conv_data),
-      .s_ready(conv_ready),
-      .m_ready(add_ready),
-      .m_valid(add_valid),
-      .m_data (add_data)
+    .clk    (clk),
+    .rst_n  (rst_n),
+    .s_valid(&conv_valid),
+    .s_data (conv_data),
+    .s_ready(conv_ready),
+    .m_ready(add_ready),
+    .m_valid(add_valid),
+    .m_data (add_data)
   );
 
-  logic              ppb_valid;
-  logic [       7:0] ppb_data;
+  logic       ppb_valid;
+  logic [7:0] ppb_data;
 
-  logic              done_ready;
-  logic              done;
-  logic              done_sel;
+  logic done_ready;
+  logic done_sel;
+  logic done;
 
   logic              rd_req;
   logic              rd_sel;
   logic [ADDR_W-1:0] rd_addr;
 
   ping_pong_buffer #(
-      .IMAGE_WIDTH(IMAGE_WIDTH_REAL),
-      .RD_LATENCY (RD_LATENCY)
+    .IMAGE_WIDTH(IMAGE_WIDTH_REAL),
+    .RD_LATENCY (RD_LATENCY)
   ) u_ppb (
-      .clk       (clk),
-      .rst_n     (rst_n),
-      .s_valid   (add_valid),
-      .s_data    (add_data),
-      .s_ready   (add_ready),
-      .m_valid   (ppb_valid),
-      .m_data    (ppb_data),
-      .rd_req    (rd_req),
-      .rd_sel    (rd_sel),
-      .rd_addr   (rd_addr),
-      .done_ready(done_ready),
-      .done      (done),
-      .done_sel  (done_sel)
+    .clk       (clk),
+    .rst_n     (rst_n),
+    .s_valid   (add_valid),
+    .s_data    (add_data),
+    .s_ready   (add_ready),
+    .m_valid   (ppb_valid),
+    .m_data    (ppb_data),
+    .rd_req    (rd_req),
+    .rd_sel    (rd_sel),
+    .rd_addr   (rd_addr),
+    .done_ready(done_ready),
+    .done      (done),
+    .done_sel  (done_sel)
   );
 
   int errors;
@@ -207,8 +207,9 @@ module demux_ppb_tb ();
   initial begin
     if (M != KERNEL_SIZE || KERNEL_SIZE < 2 || IMAGE_WIDTH <= KERNEL_SIZE ||
         IMAGE_WIDTH > 64 || RD_LATENCY < 1) begin
-      $fatal(1,
-             "Invalid parameters: M=KERNEL_SIZE>=2, KERNEL_SIZE<IMAGE_WIDTH<=64 and RD_LATENCY>=1");
+      $fatal(
+        1,
+        "Invalid parameters: M=KERNEL_SIZE>=2, KERNEL_SIZE<IMAGE_WIDTH<=64 and RD_LATENCY>=1");
     end
     reset_dut();
 
@@ -242,8 +243,8 @@ module demux_ppb_tb ();
       @(posedge clk);
       check_value(mux_valid, (col >= RD_LATENCY && col < IMAGE_WIDTH + RD_LATENCY), col,
                   "mux_valid");
-      check_value(add_valid, (col >= LATENCY_ADD && col < IMAGE_WIDTH_REAL + LATENCY_ADD), col,
-                  "add_valid");
+      check_value(add_valid, (col >= LATENCY_ADD && col < IMAGE_WIDTH_REAL + LATENCY_ADD),
+                  col, "add_valid");
 
       if (add_valid && add_ready) begin
         check_value(add_data, expect_sum(exp_pixel_cnt), exp_pixel_cnt, "add_data");
@@ -251,7 +252,8 @@ module demux_ppb_tb ();
       end
     end
 
-    check_value(exp_pixel_cnt, IMAGE_WIDTH_REAL, IMAGE_WIDTH_REAL + LATENCY_ADD, "exp_pixel_cnt");
+    check_value(exp_pixel_cnt, IMAGE_WIDTH_REAL, IMAGE_WIDTH_REAL + LATENCY_ADD,
+                "exp_pixel_cnt");
 
     @(posedge clk);
     check_value(done, 1'b1, 0, "done");
@@ -267,7 +269,8 @@ module demux_ppb_tb ();
       @(posedge clk);
       check_value(ppb_valid, cycle >= RD_LATENCY, cycle, "ppb_valid");
       if (cycle >= RD_LATENCY) begin
-        check_value(ppb_data, expect_sum(cycle - RD_LATENCY), cycle - RD_LATENCY, "ppb_data");
+        check_value(ppb_data, expect_sum(cycle - RD_LATENCY), cycle - RD_LATENCY,
+                    "ppb_data");
       end
     end
 

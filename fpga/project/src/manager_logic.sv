@@ -1,70 +1,71 @@
 module manager_logic #(
-    parameter integer AXI_ADDR_WIDTH = 29,
-    parameter integer AXI_LEN_WIDTH  = 20
+  parameter int AXI_ADDR_WIDTH = 29,
+  parameter int AXI_LEN_WIDTH  = 20
 ) (
-    input logic clk,
-    input logic rst_n,
+  input logic clk,
+  input logic rst_n,
 
-    // BAR2 PCIe Sgdma
-    input  logic        user_cs,
-    input  logic [63:0] user_address,
-    input  logic        user_rw,
-    input  logic [31:0] user_wr_data,
-    output logic        user_rd_valid,
-    output logic [31:0] user_rd_data,
-    input  logic [63:0] h2c_overhead_reg,
+  // BAR2 PCIe Sgdma
+  input  logic        user_cs,
+  input  logic [63:0] user_address,
+  input  logic        user_rw,
+  input  logic [31:0] user_wr_data,
+  output logic        user_rd_valid,
+  output logic [31:0] user_rd_data,
+  input  logic [63:0] h2c_overhead_reg,
 
-    // AXI DMA Descriptors
-    taxi_dma_desc_if.req_src desc_h2c,
-    taxi_dma_desc_if.req_src desc_c2h,
+  // AXI DMA Descriptors
+  taxi_dma_desc_if.req_src desc_h2c,
+  taxi_dma_desc_if.req_src desc_c2h,
 
-    // Logic Core Config
-    output logic [AXI_ADDR_WIDTH-1:0] lcore_read_addr,
-    output logic [AXI_ADDR_WIDTH-1:0] lcore_write_addr,
-    output logic [ AXI_LEN_WIDTH-1:0] lcore_len,
-    output logic                      lcore_run,
-    input  logic                      lcore_done
+  // Logic Core Config
+  output logic [AXI_ADDR_WIDTH-1:0] lcore_read_addr,
+  output logic [AXI_ADDR_WIDTH-1:0] lcore_write_addr,
+  output logic [ AXI_LEN_WIDTH-1:0] lcore_len,
+  output logic                      lcore_run,
+  input  logic                      lcore_done
 );
   //* All lengths in bytes.
 
   assign desc_h2c.req_tag = '0;
   assign desc_c2h.req_tag = '0;
 
-  localparam integer USR_ADDR_WIDTH = 8;
+  localparam int USR_ADDR_WIDTH = 8;
 
-  localparam [USR_ADDR_WIDTH-1:0] RegCtrl = 8'h00;
-  localparam [USR_ADDR_WIDTH-1:0] RegStatus = 8'h04;
-  localparam [USR_ADDR_WIDTH-1:0] RegAddrDDRh2c = 8'h10;
-  localparam [USR_ADDR_WIDTH-1:0] RegLengDDRh2c = 8'h14;
-  localparam [USR_ADDR_WIDTH-1:0] RegOverheadh2cLo = 8'h18;
-  localparam [USR_ADDR_WIDTH-1:0] RegOverheadh2cHi = 8'h1C;
-  localparam [USR_ADDR_WIDTH-1:0] RegAddrDDRc2h = 8'h20;
-  localparam [USR_ADDR_WIDTH-1:0] RegLengDDRc2h = 8'h24;
-  localparam [USR_ADDR_WIDTH-1:0] RegAddrLcoreRd = 8'h30;
-  localparam [USR_ADDR_WIDTH-1:0] RegAddrLcoreWr = 8'h34;
-  localparam [USR_ADDR_WIDTH-1:0] RegLengLcore = 8'h38;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegCtrl = 8'h00;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegStatus = 8'h04;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegAddrDDRh2c = 8'h10;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegLengDDRh2c = 8'h14;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegOverheadh2cLo = 8'h18;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegOverheadh2cHi = 8'h1C;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegAddrDDRc2h = 8'h20;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegLengDDRc2h = 8'h24;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegAddrLcoreRd = 8'h30;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegAddrLcoreWr = 8'h34;
+  localparam logic [USR_ADDR_WIDTH-1:0] RegLengLcore = 8'h38;
 
-  wire wr_en = user_cs && user_rw;
-  wire rd_en = user_cs && !user_rw;
-  wire [USR_ADDR_WIDTH-1:0] addr_reg = user_address[USR_ADDR_WIDTH-1:0];
+  logic wr_en, rd_en;
+  assign wr_en = user_cs && user_rw;
+  assign rd_en = user_cs && !user_rw;
 
-  reg lcore_done_latched;
-  reg lcore_start_pulse;
-  reg lcore_stop_pulse;
+  logic [USR_ADDR_WIDTH-1:0] addr_reg;
+  assign addr_reg = user_address[USR_ADDR_WIDTH-1:0];
+
+  logic lcore_start_pulse, lcore_done_latched, lcore_stop_pulse;
 
   // lcore
-  always @(posedge clk or negedge rst_n) begin
+  always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-      lcore_run <= 1'b0;
+      lcore_run          <= 1'b0;
       lcore_done_latched <= 1'b0;
     end else begin
       if (lcore_done) begin
-        lcore_run <= 1'b0;
+        lcore_run          <= 1'b0;
         lcore_done_latched <= 1'b1;
       end
 
       if (lcore_start_pulse) begin
-        lcore_run <= 1'b1;
+        lcore_run          <= 1'b1;
         lcore_done_latched <= 1'b0;
       end
 
@@ -75,22 +76,22 @@ module manager_logic #(
   end
 
   // BAR2 host write
-  always @(posedge clk or negedge rst_n) begin
+  always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       desc_h2c.req_dst_addr <= {AXI_ADDR_WIDTH{1'b0}};
-      desc_h2c.req_len <= {AXI_LEN_WIDTH{1'b0}};
-      desc_h2c.req_valid <= 1'b0;
+      desc_h2c.req_len      <= {AXI_LEN_WIDTH{1'b0}};
+      desc_h2c.req_valid    <= 1'b0;
 
       desc_c2h.req_src_addr <= {AXI_ADDR_WIDTH{1'b0}};
-      desc_c2h.req_len <= {AXI_LEN_WIDTH{1'b0}};
-      desc_c2h.req_valid <= 1'b0;
+      desc_c2h.req_len      <= {AXI_LEN_WIDTH{1'b0}};
+      desc_c2h.req_valid    <= 1'b0;
 
-      lcore_read_addr <= {AXI_ADDR_WIDTH{1'b0}};
+      lcore_read_addr  <= {AXI_ADDR_WIDTH{1'b0}};
       lcore_write_addr <= {AXI_ADDR_WIDTH{1'b0}};
-      lcore_len <= {AXI_LEN_WIDTH{1'b0}};
+      lcore_len        <= {AXI_LEN_WIDTH{1'b0}};
 
       lcore_start_pulse <= 1'b0;
-      lcore_stop_pulse <= 1'b0;
+      lcore_stop_pulse  <= 1'b0;
     end else begin
       lcore_start_pulse <= 1'b0;
       lcore_stop_pulse  <= 1'b0;
@@ -163,7 +164,7 @@ module manager_logic #(
   end
 
   // BAR2 host read
-  always @(posedge clk or negedge rst_n) begin
+  always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       user_rd_valid <= 1'b0;
       user_rd_data  <= 32'd0;
@@ -175,12 +176,12 @@ module manager_logic #(
         case (addr_reg)
           RegCtrl: user_rd_data <= 32'd0;
           RegStatus: begin
-            user_rd_data[0] <= desc_c2h.req_valid;
-            user_rd_data[1] <= desc_h2c.req_valid;
-            user_rd_data[2] <= desc_c2h.req_ready;
-            user_rd_data[3] <= desc_h2c.req_ready;
-            user_rd_data[4] <= lcore_run;
-            user_rd_data[5] <= lcore_done_latched;
+            user_rd_data[0]    <= desc_c2h.req_valid;
+            user_rd_data[1]    <= desc_h2c.req_valid;
+            user_rd_data[2]    <= desc_c2h.req_ready;
+            user_rd_data[3]    <= desc_h2c.req_ready;
+            user_rd_data[4]    <= lcore_run;
+            user_rd_data[5]    <= lcore_done_latched;
             user_rd_data[31:6] <= 26'd0;
           end
 

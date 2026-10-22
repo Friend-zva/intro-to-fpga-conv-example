@@ -1,24 +1,24 @@
 module ping_pong_buffer #(
-    parameter integer IMAGE_WIDTH = 640,
-    parameter integer RD_LATENCY  = 2
+  parameter int IMAGE_WIDTH = 640,
+  parameter int RD_LATENCY  = 2
 ) (
-    input logic clk,
-    input logic rst_n,
+  input logic clk,
+  input logic rst_n,
 
-    input  logic       s_valid,
-    input  logic [7:0] s_data,
-    output logic       s_ready,
+  input  logic       s_valid,
+  input  logic [7:0] s_data,
+  output logic       s_ready,
 
-    output logic       m_valid,
-    output logic [7:0] m_data,
+  output logic       m_valid,
+  output logic [7:0] m_data,
 
-    input logic                           rd_req,
-    input logic                           rd_sel,
-    input logic [$clog2(IMAGE_WIDTH)-1:0] rd_addr,
+  input logic                           rd_req,
+  input logic                           rd_sel,
+  input logic [$clog2(IMAGE_WIDTH)-1:0] rd_addr,
 
-    input  logic done_ready,
-    output logic done,
-    output logic done_sel
+  input  logic done_ready,
+  output logic done,
+  output logic done_sel
 );
 
   if (RD_LATENCY < 1) begin : fatal_latency
@@ -26,7 +26,8 @@ module ping_pong_buffer #(
   end
 
   logic [$clog2(IMAGE_WIDTH)-1:0] wr_addr;
-  logic wr_bank;
+  logic                           wr_bank;
+
   logic [1:0] done_all;
 
   always_ff @(posedge clk or negedge rst_n) begin
@@ -58,19 +59,21 @@ module ping_pong_buffer #(
   logic [7:0] bank_data[2];
 
   for (genvar b = 0; b < 2; b++) begin : gen_banks
-    wire wr_bank_sel = (wr_bank == b[0]);
-    wire wr_bank_en = s_valid && s_ready && wr_bank_sel;
-    wire [$clog2(IMAGE_WIDTH)-1:0] bank_addr = wr_bank_en ? wr_addr : rd_addr;
+    logic wr_bank_sel, wr_bank_en;
+    logic [$clog2(IMAGE_WIDTH)-1:0] bank_addr;
+    assign wr_bank_sel = (wr_bank == b[0]);
+    assign wr_bank_en  = s_valid && s_ready && wr_bank_sel;
+    assign bank_addr   = wr_bank_en ? wr_addr : rd_addr;
 
     Gowin_SP u_bank (
-        .dout (bank_data[b]),
-        .clk  (clk),
-        .oce  (1'b1),
-        .ce   (1'b1),
-        .reset(~rst_n),
-        .wre  (wr_bank_en),
-        .ad   (bank_addr),
-        .din  (s_data)
+      .dout (bank_data[b]),
+      .clk  (clk),
+      .oce  (1'b1),
+      .ce   (1'b1),
+      .reset(~rst_n),
+      .wre  (wr_bank_en),
+      .ad   (bank_addr),
+      .din  (s_data)
     );
   end
 

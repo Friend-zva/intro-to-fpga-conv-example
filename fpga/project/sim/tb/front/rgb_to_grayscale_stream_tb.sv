@@ -1,21 +1,21 @@
 `timescale 1ns / 1ps
 
 module rgb_to_grayscale_stream_tb ();
-  parameter integer AXI_DATA_WIDTH = 256;
-  parameter integer AXI_ADDR_WIDTH = 29;
-  parameter integer AXI_LEN_WIDTH = 20;
+  parameter int AXI_DATA_WIDTH = 256;
+  parameter int AXI_ADDR_WIDTH = 29;
+  parameter int AXI_LEN_WIDTH = 20;
 
-  localparam integer COUNT_PIXELS = AXI_DATA_WIDTH / 32;
+  localparam int COUNT_PIXELS = AXI_DATA_WIDTH / 32;
 
-  logic                      clk;
-  logic                      rst_n;
+  logic clk;
+  logic rst_n;
 
   logic [AXI_ADDR_WIDTH-1:0] cfg_read_addr;
   logic [ AXI_LEN_WIDTH-1:0] cfg_len;
 
   taxi_dma_desc_if #(
-      .SRC_ADDR_W(AXI_ADDR_WIDTH),
-      .LEN_W(AXI_LEN_WIDTH)
+    .SRC_ADDR_W(AXI_ADDR_WIDTH),
+    .LEN_W     (AXI_LEN_WIDTH)
   ) rd_desc_req ();
   taxi_axis_if #(.DATA_W(AXI_DATA_WIDTH)) s_axis_rx ();
 
@@ -24,24 +24,24 @@ module rgb_to_grayscale_stream_tb ();
   logic       m_last;
   logic [7:0] m_data;
 
-  logic       run;
+  logic run;
 
   rgb_to_grayscale_stream #(
-      .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
-      .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
-      .AXI_LEN_WIDTH (AXI_LEN_WIDTH)
+    .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
+    .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
+    .AXI_LEN_WIDTH (AXI_LEN_WIDTH)
   ) dut (
-      .clk(clk),
-      .rst_n(rst_n),
-      .cfg_read_addr(cfg_read_addr),
-      .cfg_len(cfg_len),
-      .rd_desc_req(rd_desc_req),
-      .s_axis_rx(s_axis_rx),
-      .m_ready(m_ready),
-      .m_valid(m_valid),
-      .m_last(m_last),
-      .m_data(m_data),
-      .run(run)
+    .clk          (clk),
+    .rst_n        (rst_n),
+    .cfg_read_addr(cfg_read_addr),
+    .cfg_len      (cfg_len),
+    .rd_desc_req  (rd_desc_req),
+    .s_axis_rx    (s_axis_rx),
+    .m_ready      (m_ready),
+    .m_valid      (m_valid),
+    .m_last       (m_last),
+    .m_data       (m_data),
+    .run          (run)
   );
 
   int errors;
@@ -81,7 +81,7 @@ module rgb_to_grayscale_stream_tb ();
     forever #5 clk = ~clk;
   end
 
-  int exp_pixel_cnt;
+  int                        exp_pixel_cnt;
   logic [AXI_DATA_WIDTH-1:0] exp_pixels;
 
   task reset_dut();
@@ -112,14 +112,15 @@ module rgb_to_grayscale_stream_tb ();
 
     @(negedge clk);
     cfg_read_addr = AXI_ADDR_WIDTH'('h1000);
-    cfg_len = AXI_LEN_WIDTH'(2 * (AXI_DATA_WIDTH / 8));
-    run = 1'b1;
+    cfg_len       = AXI_LEN_WIDTH'(2 * (AXI_DATA_WIDTH / 8));
+    run           = 1'b1;
 
     repeat (2) @(posedge clk);
     check_value(rd_desc_req.req_valid, 1'b1, int'($time / 10), "rd_desc_req.req_valid");
     check_value(64'(rd_desc_req.req_src_addr), 64'(cfg_read_addr), int'($time / 10),
                 "rd_desc_req.req_src_addr");
-    check_value(64'(rd_desc_req.req_len), 64'(cfg_len), int'($time / 10), "rd_desc_req.req_len");
+    check_value(64'(rd_desc_req.req_len), 64'(cfg_len), int'($time / 10),
+                "rd_desc_req.req_len");
     check_value(m_valid, 1'b0, int'($time / 10), "m_valid");
     check_value(s_axis_rx.tready, 1'b0, int'($time / 10), "s_axis_rx.tready");
 
@@ -135,10 +136,10 @@ module rgb_to_grayscale_stream_tb ();
       for (int i = 0; i < COUNT_PIXELS; i++) begin
         exp_pixels[i*32+:32] = get_pixel(beat * 5 + i);
       end
-      s_axis_rx.tdata = exp_pixels;
+      s_axis_rx.tdata  = exp_pixels;
       s_axis_rx.tvalid = 1'b1;
-      s_axis_rx.tlast = (beat == 1);
-      m_ready = 1'b0;
+      s_axis_rx.tlast  = (beat == 1);
+      m_ready          = 1'b0;
 
       @(posedge clk);
       check_value(s_axis_rx.tready, 1'b1, int'($time / 10), "s_axis_rx.tready");
@@ -160,7 +161,8 @@ module rgb_to_grayscale_stream_tb ();
         check_value(m_valid, 1'b1, int'($time / 10), "m_valid");
         check_value(64'(m_data), 64'(expect_gray(exp_pixels[i*32+:32])), int'($time / 10),
                     "m_data");
-        check_value(m_last, beat == 1 && i == COUNT_PIXELS - 1, int'($time / 10), "m_last");
+        check_value(m_last, beat == 1 && i == COUNT_PIXELS - 1, int'($time / 10),
+                    "m_last");
         exp_pixel_cnt++;
       end
 

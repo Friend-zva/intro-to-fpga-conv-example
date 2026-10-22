@@ -1,18 +1,18 @@
 module scalar_product #(
-    parameter integer VECTOR_SIZE = 3
+  parameter int VECTOR_SIZE = 3
 ) (
-    input logic [31:0] vector[VECTOR_SIZE],
-    input logic [7:0] uint8_in[VECTOR_SIZE],
-    output logic [7:0] uint8_out
+  input  logic [31:0] vector   [VECTOR_SIZE],
+  input  logic [ 7:0] uint8_in [VECTOR_SIZE],
+  output logic [ 7:0] uint8_out
 );
 
   logic [7:0] temp[VECTOR_SIZE];
 
   for (genvar i = 0; i < VECTOR_SIZE; i++) begin : gen_mult
     float_mult_byte float_mult (
-        .float_in (vector[i]),
-        .uint8_in (uint8_in[i]),
-        .uint8_out(temp[i])
+      .float_in (vector[i]),
+      .uint8_in (uint8_in[i]),
+      .uint8_out(temp[i])
     );
   end
 

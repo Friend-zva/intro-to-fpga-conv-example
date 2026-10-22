@@ -1,47 +1,48 @@
 module rgb_to_grayscale_stream #(
-    parameter integer AXI_DATA_WIDTH = 256,
-    parameter integer AXI_ADDR_WIDTH = 29,
-    parameter integer AXI_LEN_WIDTH  = 20
+  parameter int AXI_DATA_WIDTH = 256,
+  parameter int AXI_ADDR_WIDTH = 29,
+  parameter int AXI_LEN_WIDTH  = 20
 ) (
-    input logic clk,
-    input logic rst_n,
+  input logic clk,
+  input logic rst_n,
 
-    input logic [AXI_ADDR_WIDTH-1:0] cfg_read_addr,
-    input logic [ AXI_LEN_WIDTH-1:0] cfg_len,
+  input logic [AXI_ADDR_WIDTH-1:0] cfg_read_addr,
+  input logic [ AXI_LEN_WIDTH-1:0] cfg_len,
 
-    taxi_dma_desc_if.req_src rd_desc_req,
-    taxi_axis_if.snk s_axis_rx,
+  taxi_dma_desc_if.req_src rd_desc_req,
+  taxi_axis_if.snk         s_axis_rx,
 
-    input  logic       m_ready,
-    output logic       m_valid,
-    output logic       m_last,
-    output logic [7:0] m_data,
+  input  logic       m_ready,
+  output logic       m_valid,
+  output logic       m_last,
+  output logic [7:0] m_data,
 
-    input logic run
+  input logic run
 );
 
   assign rd_desc_req.req_src_addr = cfg_read_addr;
   assign rd_desc_req.req_len      = cfg_len;
 
-  localparam integer COUNT_PIXELS = AXI_DATA_WIDTH / 32;
-  localparam integer WIDTH_PTR = $clog2(COUNT_PIXELS);
-  localparam [WIDTH_PTR-1:0] INDEX_PIXEL_LAST = COUNT_PIXELS - 1;
+  localparam int COUNT_PIXELS = AXI_DATA_WIDTH / 32;
+  localparam int WIDTH_PTR = $clog2(COUNT_PIXELS);
+  localparam logic [WIDTH_PTR-1:0] INDEX_PIXEL_LAST = COUNT_PIXELS - 1;
 
   logic [COUNT_PIXELS*8-1:0] pixels;
 
   for (genvar i = 0; i < COUNT_PIXELS; i = i + 1) begin : gen_pixels
-    wire [ 7:0] r = s_axis_rx.tdata[i*32+0+:8];
-    wire [ 7:0] g = s_axis_rx.tdata[i*32+8+:8];
-    wire [ 7:0] b = s_axis_rx.tdata[i*32+16+:8];
-
-    wire [15:0] grayscale = (r * 8'd77) + (g * 8'd150) + (b * 8'd29);
+    logic [7:0] r, g, b;
+    logic [15:0] grayscale;
+    assign r              = s_axis_rx.tdata[i*32+0+:8];
+    assign g              = s_axis_rx.tdata[i*32+8+:8];
+    assign b              = s_axis_rx.tdata[i*32+16+:8];
+    assign grayscale      = (r * 8'd77) + (g * 8'd150) + (b * 8'd29);
     assign pixels[i*8+:8] = grayscale[15:8];
   end
 
-  logic                 done;
-  logic                 busy;
+  logic busy, done;
+  logic m_last_reg;
+
   logic [WIDTH_PTR-1:0] pixel_ptr;
-  logic                 m_last_reg;
 
   typedef enum logic [1:0] {
     IDLE,

@@ -1,24 +1,24 @@
-module mux_m1_to_m #(
-    parameter integer M          = 3,
-    parameter integer RD_LATENCY = 2
+module mux_m1_to_m #(  // verilog_lint: waive module-filename
+  parameter int M          = 3,
+  parameter int RD_LATENCY = 2
 ) (
-    input logic clk,
-    input logic rst_n,
+  input logic clk,
+  input logic rst_n,
 
-    input logic [$clog2(M+1)-1:0] write_sel,
-    input logic [            M:0] line_valid,
+  input logic [$clog2(M+1)-1:0] write_sel,
+  input logic [            M:0] line_valid,
 
-    input  logic       s_valid,
-    input  logic       s_last,
-    input  logic [7:0] s_data [M+1],
-    output logic       s_ready,
+  input  logic       s_valid,
+  input  logic       s_last,
+  input  logic [7:0] s_data [M+1],
+  output logic       s_ready,
 
-    input  logic       m_ready,
-    output logic       m_valid,
-    output logic       m_last,
-    output logic [7:0] m_data [M]
+  input  logic       m_ready,
+  output logic       m_valid,
+  output logic       m_last,
+  output logic [7:0] m_data [M]
 );
-  localparam integer N = M + 1;
+  localparam int N = M + 1;
 
   assign s_ready = m_ready;
 
@@ -30,6 +30,7 @@ module mux_m1_to_m #(
 
   logic [RD_LATENCY-1:0] valid_pipe;
   logic [RD_LATENCY-1:0] last_pipe;
+
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       valid_pipe <= '0;

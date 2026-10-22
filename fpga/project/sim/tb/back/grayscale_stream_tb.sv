@@ -1,66 +1,66 @@
 `timescale 1ns / 1ps
 
 module grayscale_stream_tb ();
-  parameter integer AXI_DATA_WIDTH = 256;
-  parameter integer AXI_ADDR_WIDTH = 29;
-  parameter integer AXI_LEN_WIDTH = 20;
-  parameter integer AXI_STRB_WIDTH = AXI_DATA_WIDTH / 8;
-  parameter integer KERNEL_SIZE = 3;
-  parameter integer IMAGE_WIDTH = 62;
-  parameter integer IMAGE_HEIGHT = 6;
+  parameter int AXI_DATA_WIDTH = 256;
+  parameter int AXI_ADDR_WIDTH = 29;
+  parameter int AXI_LEN_WIDTH = 20;
+  parameter int AXI_STRB_WIDTH = AXI_DATA_WIDTH / 8;
+  parameter int KERNEL_SIZE = 3;
+  parameter int IMAGE_WIDTH = 62;
+  parameter int IMAGE_HEIGHT = 6;
 
-  localparam integer PAD = KERNEL_SIZE / 2;
-  localparam integer ROW_LEN = IMAGE_WIDTH - 2 * PAD;
-  localparam integer BYTES_PER_WORD = AXI_DATA_WIDTH / 8;
-  localparam integer BEATS_PER_ROW = (ROW_LEN + BYTES_PER_WORD - 1) / BYTES_PER_WORD;
+  localparam int PAD = KERNEL_SIZE / 2;
+  localparam int ROW_LEN = IMAGE_WIDTH - 2 * PAD;
+  localparam int BYTES_PER_WORD = AXI_DATA_WIDTH / 8;
+  localparam int BEATS_PER_ROW = (ROW_LEN + BYTES_PER_WORD - 1) / BYTES_PER_WORD;
 
-  logic                      clk;
-  logic                      rst_n;
+  logic clk;
+  logic rst_n;
 
   logic [AXI_ADDR_WIDTH-1:0] cfg_write_addr;
 
-  logic                      s_valid;
-  logic [               7:0] s_data;
+  logic       s_valid;
+  logic [7:0] s_data;
 
   taxi_dma_desc_if #(
-      .DST_ADDR_W(AXI_ADDR_WIDTH),
-      .LEN_W(AXI_LEN_WIDTH)
+    .DST_ADDR_W(AXI_ADDR_WIDTH),
+    .LEN_W     (AXI_LEN_WIDTH)
   ) wr_desc_req ();
   taxi_axis_if #(
-      .DATA_W(AXI_DATA_WIDTH),
-      .KEEP_W(AXI_STRB_WIDTH)
+    .DATA_W(AXI_DATA_WIDTH),
+    .KEEP_W(AXI_STRB_WIDTH)
   ) m_axis_tx ();
 
-  logic                       ppb_done;
-  logic                       ppb_done_sel;
-  logic                       ppb_done_ready;
+  logic ppb_done_ready;
+  logic ppb_done_sel;
+  logic ppb_done;
 
   logic                       rd_req;
   logic                       rd_sel;
   logic [$clog2(ROW_LEN)-1:0] rd_addr;
 
   grayscale_stream #(
-      .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
-      .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
-      .AXI_LEN_WIDTH(AXI_LEN_WIDTH),
-      .AXI_STRB_WIDTH(AXI_STRB_WIDTH),
-      .KERNEL_SIZE(KERNEL_SIZE),
-      .IMAGE_WIDTH(IMAGE_WIDTH),
-      .IMAGE_HEIGHT(IMAGE_HEIGHT)
+    .AXI_DATA_WIDTH(AXI_DATA_WIDTH),
+    .AXI_ADDR_WIDTH(AXI_ADDR_WIDTH),
+    .AXI_LEN_WIDTH (AXI_LEN_WIDTH),
+    .AXI_STRB_WIDTH(AXI_STRB_WIDTH),
+    .KERNEL_SIZE   (KERNEL_SIZE),
+    .IMAGE_WIDTH   (IMAGE_WIDTH),
+    .IMAGE_HEIGHT  (IMAGE_HEIGHT)
   ) dut (
-      .clk(clk),
-      .rst_n(rst_n),
-      .cfg_write_addr(cfg_write_addr),
-      .s_valid(s_valid),
-      .s_data(s_data),
-      .wr_desc_req(wr_desc_req),
-      .m_axis_tx(m_axis_tx),
-      .ppb_done(ppb_done),
-      .ppb_done_sel(ppb_done_sel),
-      .ppb_done_ready(ppb_done_ready),
-      .rd_req(rd_req),
-      .rd_sel(rd_sel),
-      .rd_addr(rd_addr)
+    .clk           (clk),
+    .rst_n         (rst_n),
+    .cfg_write_addr(cfg_write_addr),
+    .s_valid       (s_valid),
+    .s_data        (s_data),
+    .wr_desc_req   (wr_desc_req),
+    .m_axis_tx     (m_axis_tx),
+    .ppb_done      (ppb_done),
+    .ppb_done_sel  (ppb_done_sel),
+    .ppb_done_ready(ppb_done_ready),
+    .rd_req        (rd_req),
+    .rd_sel        (rd_sel),
+    .rd_addr       (rd_addr)
   );
 
   int errors;
@@ -103,17 +103,18 @@ module grayscale_stream_tb ();
     if (ROW_LEN < 2 || ROW_LEN > 256 || AXI_DATA_WIDTH < 16 ||
         AXI_DATA_WIDTH % 8 != 0 || AXI_STRB_WIDTH != BYTES_PER_WORD) begin
       $fatal(
-          1,
-          "Invalid parameters: 2 <= ROW_LEN <= 256, AXI_DATA_WIDTH >= 16 and a multiple of 8, AXI_STRB_WIDTH == BYTES_PER_WORD");
+        1,
+        "Invalid parameters: 2 <= ROW_LEN <= 256, AXI_DATA_WIDTH >= 16 and a multiple of 8, AXI_STRB_WIDTH == BYTES_PER_WORD");
     end
     reset_dut();
 
     for (int row = 0; row < 2; row++) begin
-      $display("Test %0d: Row packing, bank selection, destination advancement and AXI stalls",
-               row + 1);
+      $display(
+        "Test %0d: Row packing, bank selection, destination advancement and AXI stalls",
+        row + 1);
       $display("Completed bank");
       @(negedge clk);
-      ppb_done = 1'b1;
+      ppb_done     = 1'b1;
       ppb_done_sel = row[0];
 
       @(posedge clk);
@@ -126,8 +127,9 @@ module grayscale_stream_tb ();
       for (int cycle = 0; cycle <= 2 * row; cycle++) begin
         @(posedge clk);
         check_value(wr_desc_req.req_valid, 1'b1, cycle, "wr_desc_req.req_valid");
-        check_value(wr_desc_req.req_dst_addr, cfg_write_addr + (row + PAD) * IMAGE_WIDTH + PAD,
-                    cycle, "wr_desc_req.req_dst_addr");
+        check_value(wr_desc_req.req_dst_addr,
+                    cfg_write_addr + (row + PAD) * IMAGE_WIDTH + PAD, cycle,
+                    "wr_desc_req.req_dst_addr");
         check_value(wr_desc_req.req_len, ROW_LEN, cycle, "wr_desc_req.req_len");
 
         check_value(rd_sel, row, cycle, "rd_sel");
@@ -152,10 +154,10 @@ module grayscale_stream_tb ();
           check_value(rd_addr, col, col, "rd_addr");
 
           @(negedge clk);
-          s_valid = 1'b1;
-          s_data = 8'(row * 64 + col);
+          s_valid                 = 1'b1;
+          s_data                  = 8'(row * 64 + col);
           exp_data[byte_idx*8+:8] = s_data;
-          exp_keep[byte_idx] = 1'b1;
+          exp_keep[byte_idx]      = 1'b1;
           @(posedge clk);
 
           @(negedge clk);
@@ -166,7 +168,8 @@ module grayscale_stream_tb ();
         repeat (2) @(posedge clk);
         for (int cycle = 0; cycle <= 2 * row; cycle++) begin
           check_value(m_axis_tx.tvalid, 1'b1, beat, "m_axis_tx.tvalid");
-          check_value(m_axis_tx.tlast, beat == BEATS_PER_ROW - 1, beat, "m_axis_tx.tlast");
+          check_value(m_axis_tx.tlast, beat == BEATS_PER_ROW - 1, beat,
+                      "m_axis_tx.tlast");
           check_value(m_axis_tx.tkeep, exp_keep, beat, "m_axis_tx.tkeep");
 
           for (int byte_idx = 0; byte_idx < BYTES_PER_WORD; byte_idx++) begin

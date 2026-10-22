@@ -1,47 +1,47 @@
 `timescale 1ns / 1ps
 
 module mux_tb ();
-  parameter integer M = 3;
-  parameter integer RD_LATENCY = 2;
+  parameter int M = 3;
+  parameter int RD_LATENCY = 2;
 
-  localparam integer N = M + 1;
-  localparam integer IMAGE_WIDTH = 4;
-  localparam integer IMAGE_HEIGHT = 6;
+  localparam int N = M + 1;
+  localparam int IMAGE_WIDTH = 4;
+  localparam int IMAGE_HEIGHT = 6;
 
-  localparam integer DUMMY = 3;
+  localparam int DUMMY = 3;
 
-  logic                 clk;
-  logic                 rst_n;
+  logic clk;
+  logic rst_n;
 
   logic [$clog2(N)-1:0] write_sel;
   logic [          M:0] line_valid;
 
-  logic                 s_valid;
-  logic                 s_last;
-  logic [          7:0] s_data     [N];
-  logic                 s_ready;
+  logic       s_valid;
+  logic       s_last;
+  logic [7:0] s_data  [N];
+  logic       s_ready;
 
-  logic                 m_ready;
-  logic                 m_valid;
-  logic                 m_last;
-  logic [          7:0] m_data     [M];
+  logic       m_ready;
+  logic       m_valid;
+  logic       m_last;
+  logic [7:0] m_data  [M];
 
   mux_m1_to_m #(
-      .M(M),
-      .RD_LATENCY(RD_LATENCY)
+    .M         (M),
+    .RD_LATENCY(RD_LATENCY)
   ) dut (
-      .clk(clk),
-      .rst_n(rst_n),
-      .write_sel(write_sel),
-      .line_valid(line_valid),
-      .s_valid(s_valid),
-      .s_last(s_last),
-      .s_data(s_data),
-      .s_ready(s_ready),
-      .m_ready(m_ready),
-      .m_valid(m_valid),
-      .m_last(m_last),
-      .m_data(m_data)
+    .clk       (clk),
+    .rst_n     (rst_n),
+    .write_sel (write_sel),
+    .line_valid(line_valid),
+    .s_valid   (s_valid),
+    .s_last    (s_last),
+    .s_data    (s_data),
+    .s_ready   (s_ready),
+    .m_ready   (m_ready),
+    .m_valid   (m_valid),
+    .m_last    (m_last),
+    .m_data    (m_data)
   );
 
   int errors;
@@ -88,8 +88,8 @@ module mux_tb ();
       @(negedge clk);
       s_valid = 1'b1;
       for (int i = 0; i < N; i++) s_data[i] = i;
-      line_valid = '1;
-      write_sel = sel;
+      line_valid        = '1;
+      write_sel         = sel;
       s_data[write_sel] = 8'hFF;
 
       @(posedge clk);
