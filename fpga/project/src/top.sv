@@ -42,46 +42,32 @@ module top (
   // ===============
   // Clocks & Resets
   // ===============
-  // Clocks
-  wire sys_clk;
-  /* synthesis syn_keep = 1 */
-  wire cfg_clk;
-  /* synthesis syn_keep = 1 */
-  wire memory_clk;
-  /* synthesis syn_keep = 1 */
-  wire div_clk, tlp_clk, ddr_in_clk;
-  wire pll_50m_clk, pll_200m_clk, pll_400m_clk;
+  wire pll_50m_clk, pll_100m_clk, pll_200m_clk, pll_400m_clk;
   wire pll_lock, pll_stop;
 
   Gowin_PLL u_pll (
       .clkin(sys_clk_p),
       .init_clk(sys_clk_p),
       .clkout0(pll_50m_clk),
-      .clkout1(pll_200m_clk),
-      .clkout2(pll_400m_clk),
+      .clkout1(pll_100m_clk),
+      .clkout2(pll_200m_clk),
+      .clkout3(pll_400m_clk),
       .enclk0(1'b1),
       .enclk1(1'b1),
-      .enclk2(pll_stop),
+      .enclk2(1'b1),
+      .enclk3(pll_stop),
       .lock(pll_lock),
       .reset(~hard_rst_n)
   );
-  assign sys_clk = pll_200m_clk;
-  assign memory_clk = pll_400m_clk;
 
-  CLKDIV #(
-      .DIV_MODE("2")
-  ) uut_div2 (
-      div_clk,
-      'b0,
-      sys_clk,
-      'b1
-  );
-  assign cfg_clk = div_clk;
-  assign tlp_clk = div_clk;
-  assign ddr_in_clk = div_clk;
+  wire cfg_clk = pll_100m_clk;
+  wire tlp_clk = pll_100m_clk;
+  wire memory_clk = pll_400m_clk;
 
+  wire ddr_in_clk = sys_clk_p;
   wire ddr_out_clk, ddr_out_rst;
   wire                 ui_clk = ddr_out_clk;
+
   wire                 pcie_start;
   wire                 ddr_init;
 
@@ -95,32 +81,37 @@ module top (
   wire                 ui_rst = ddr_out_rst | !rst_n | !pcie_start;
 
   // PCIe start delay
-  always @(posedge cfg_clk or negedge rst_n)
+  always @(posedge cfg_clk or negedge rst_n) begin
     if (!rst_n) sys_rst_cnt <= 0;
     else if (!sys_rst_cnt[SYS_RST_DLY]) sys_rst_cnt <= sys_rst_cnt + 1'd1;
+  end
 
   wire sys_rst_n = sys_rst_cnt[SYS_RST_DLY];
 
-  always @(posedge cfg_clk or negedge sys_rst_n)
+  always @(posedge cfg_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) perst_cnt <= 0;
     else if (!perst_cnt[PERST_DLY]) perst_cnt <= perst_cnt + 1'd1;
+  end
 
-  always @(posedge cfg_clk or negedge sys_rst_n)
+  always @(posedge cfg_clk or negedge sys_rst_n) begin
     if (!sys_rst_n) pcie_st_cnt <= 0;
     else if (!pcie_start) pcie_st_cnt <= pcie_st_cnt + 1'd1;
+  end
 
-  assign pcie_start = pcie_st_cnt[PCIE_DLY] ? 1'b1 : 1'b0;
+  assign pcie_start = pcie_st_cnt[PCIE_DLY];
 
   // Control led blink
-  always @(posedge cfg_clk or negedge rst_n)
+  always @(posedge cfg_clk or negedge rst_n) begin
     if (!rst_n) run_cnt <= 0;
     else run_cnt <= run_cnt + 1'd1;
+  end
 
   wire pcie_linkup;
-  reg  pcie_linkup_r = 0;
-  /* synthesis syn_keep = 1 */
+  reg  pcie_linkup_r;
 
-  always @(posedge cfg_clk) pcie_linkup_r <= pcie_linkup;
+  always @(posedge cfg_clk) begin
+    pcie_linkup_r <= pcie_linkup;
+  end
 
   // ============
   // Interconnect
