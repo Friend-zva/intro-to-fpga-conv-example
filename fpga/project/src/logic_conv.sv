@@ -64,7 +64,6 @@ module logic_conv #(
     .rd_desc_req  (rd_desc_req),
     .s_axis_rx    (s_axis_rx),
     .m_ready      (rtg_ready),
-    // .m_ready(rtg_ready && ppb_done_ready),
     .m_valid      (rtg_valid),
     .m_last       (rtg_last),
     .m_data       (rtg_data),

@@ -15,7 +15,7 @@ module window #(
   output logic [7:0] m_data [WINDOW_SIZE]
 );
 
-  logic [$clog2(WINDOW_SIZE)-1:0] cnt;
+  logic [$clog2(WINDOW_SIZE+1)-1:0] cnt;
 
   assign s_ready = run && (!m_valid || m_ready);
 

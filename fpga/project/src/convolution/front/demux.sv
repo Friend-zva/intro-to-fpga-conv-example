@@ -68,9 +68,9 @@ module demux_1_to_m1 #(  // verilog_lint: waive module-filename
   end
 
   assign s_ready = m_ready && !last_run && !last_done;
-  assign m_valid = s_fire || last_fire;
+  assign m_valid = last_run || (s_valid && !last_done);
   assign m_last  = addr == IMAGE_WIDTH - 1;
-  assign m_data  = s_data;
+  assign m_data  = last_run ? 8'b0 : s_data;
 
   always_comb begin
     write_en = '0;

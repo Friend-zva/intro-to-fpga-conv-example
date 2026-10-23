@@ -53,7 +53,6 @@ module ping_pong_buffer #(
   end
 
   assign done    = done_all[wr_bank];
-  // assign s_ready = !(&done_all);
   assign s_ready = !done;
 
   logic [7:0] bank_data[2];

@@ -65,7 +65,6 @@ module conv1d #(
     .uint8_out(m_data)
   );
 
-  // assign m_valid = win_valid && ker_done;
   assign m_valid = win_valid;
 
 endmodule

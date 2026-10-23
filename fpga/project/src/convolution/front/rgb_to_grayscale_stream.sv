@@ -19,12 +19,8 @@ module rgb_to_grayscale_stream #(
 
   input logic run
 );
-
-  assign rd_desc_req.req_src_addr = cfg_read_addr;
-  assign rd_desc_req.req_len      = cfg_len;
-
   localparam int COUNT_PIXELS = AXI_DATA_WIDTH / 32;
-  localparam int WIDTH_PTR = $clog2(COUNT_PIXELS);
+  localparam int WIDTH_PTR = (COUNT_PIXELS > 1) ? $clog2(COUNT_PIXELS) : 1;
   localparam logic [WIDTH_PTR-1:0] INDEX_PIXEL_LAST = COUNT_PIXELS - 1;
 
   logic [COUNT_PIXELS*8-1:0] pixels;
@@ -39,10 +35,11 @@ module rgb_to_grayscale_stream #(
     assign pixels[i*8+:8] = grayscale[15:8];
   end
 
-  logic busy, done;
+  logic busy;
   logic m_last_reg;
 
-  logic [WIDTH_PTR-1:0] pixel_ptr;
+  logic [COUNT_PIXELS*8-1:0] pixels_reg;
+  logic [     WIDTH_PTR-1:0] pixel_ptr;
 
   typedef enum logic [1:0] {
     IDLE,
@@ -52,14 +49,26 @@ module rgb_to_grayscale_stream #(
   } state_t;
   state_t state;
 
+  assign s_axis_rx.tready = (state == WAIT_DATA) && !busy;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+      rd_desc_req.req_src_addr <= '0;
+      rd_desc_req.req_len      <= '0;
+    end else if (state == IDLE && run) begin
+      rd_desc_req.req_src_addr <= cfg_read_addr;
+      rd_desc_req.req_len      <= cfg_len;
+    end
+  end
+
   always_ff @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       state                 <= IDLE;
       rd_desc_req.req_valid <= 1'b0;
-      done                  <= 1'b0;
       busy                  <= 1'b0;
-      m_valid               <= 1'b0;
-      m_last                <= 1'b0;
+      pixel_ptr             <= '0;
+      pixels_reg            <= '0;
+      m_last_reg            <= 1'b0;
     end else begin
       if (rd_desc_req.req_valid && rd_desc_req.req_ready) begin
         rd_desc_req.req_valid <= 1'b0;
@@ -67,7 +76,6 @@ module rgb_to_grayscale_stream #(
 
       case (state)
         IDLE: begin
-          done <= 1'b0;
           if (run) begin
             rd_desc_req.req_valid <= 1'b1;
             state                 <= ISSUE_CMD;
@@ -84,32 +92,23 @@ module rgb_to_grayscale_stream #(
           if (s_axis_rx.tvalid && s_axis_rx.tready) begin
             busy       <= 1'b1;
             pixel_ptr  <= '0;
-            m_valid    <= 1'b0;
-            m_last     <= 1'b0;
+            pixels_reg <= pixels;
             m_last_reg <= s_axis_rx.tlast;
           end else if (m_ready && busy) begin
-            m_data    <= pixels[int'(pixel_ptr)*8+:8];
-            m_valid   <= 1'b1;
-            pixel_ptr <= pixel_ptr + 1;
+            pixel_ptr <= pixel_ptr + 1'b1;
 
             if (pixel_ptr == INDEX_PIXEL_LAST) begin
               busy <= 1'b0;
 
               if (m_last_reg) begin
-                m_last <= 1'b1;
-                done   <= 1'b1;
-                state  <= DONE_STATE;
+                state <= DONE_STATE;
               end
             end
-          end else begin
-            m_valid <= 1'b0;
           end
         end
 
         DONE_STATE: begin
-          m_valid <= 1'b0;
           if (!run) begin
-            done  <= 1'b0;
             state <= IDLE;
           end
         end
@@ -119,6 +118,8 @@ module rgb_to_grayscale_stream #(
     end
   end
 
-  assign s_axis_rx.tready = (state == WAIT_DATA) && !busy && (!m_valid || m_ready);
+  assign m_valid = busy;
+  assign m_last  = m_last_reg && pixel_ptr == INDEX_PIXEL_LAST;
+  assign m_data  = pixels_reg[int'(pixel_ptr)*8+:8];
 
 endmodule

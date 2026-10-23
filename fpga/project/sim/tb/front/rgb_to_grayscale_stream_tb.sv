@@ -102,7 +102,8 @@ module rgb_to_grayscale_stream_tb ();
 
   initial begin
     if (AXI_DATA_WIDTH < 64 || AXI_DATA_WIDTH % 32 != 0) begin
-      $fatal(1, "Invalid parameters: AXI_DATA_WIDTH must be >= 64 and a multiple of 32");
+      $fatal(
+        1, "Invalid parameters: AXI_DATA_WIDTH must be >= 64 and a multiple of 32");
     end
     reset_dut();
 
@@ -116,7 +117,8 @@ module rgb_to_grayscale_stream_tb ();
     run           = 1'b1;
 
     repeat (2) @(posedge clk);
-    check_value(rd_desc_req.req_valid, 1'b1, int'($time / 10), "rd_desc_req.req_valid");
+    check_value(rd_desc_req.req_valid, 1'b1, int'($time / 10),
+                "rd_desc_req.req_valid");
     check_value(64'(rd_desc_req.req_src_addr), 64'(cfg_read_addr), int'($time / 10),
                 "rd_desc_req.req_src_addr");
     check_value(64'(rd_desc_req.req_len), 64'(cfg_len), int'($time / 10),
@@ -125,7 +127,8 @@ module rgb_to_grayscale_stream_tb ();
     check_value(s_axis_rx.tready, 1'b0, int'($time / 10), "s_axis_rx.tready");
 
     repeat (2) @(posedge clk);
-    check_value(rd_desc_req.req_valid, 1'b0, int'($time / 10), "rd_desc_req.req_valid");
+    check_value(rd_desc_req.req_valid, 1'b0, int'($time / 10),
+                "rd_desc_req.req_valid");
     check_value(m_valid, 1'b0, int'($time / 10), "m_valid");
     check_value(s_axis_rx.tready, 1'b1, int'($time / 10), "s_axis_rx.tready");
 
@@ -154,13 +157,12 @@ module rgb_to_grayscale_stream_tb ();
 
       @(negedge clk);
       m_ready = 1'b1;
-      @(posedge clk);
 
       for (int i = 0; i < COUNT_PIXELS; i++) begin
         @(posedge clk);
         check_value(m_valid, 1'b1, int'($time / 10), "m_valid");
-        check_value(64'(m_data), 64'(expect_gray(exp_pixels[i*32+:32])), int'($time / 10),
-                    "m_data");
+        check_value(64'(m_data), 64'(expect_gray(exp_pixels[i*32+:32])),
+                    int'($time / 10), "m_data");
         check_value(m_last, beat == 1 && i == COUNT_PIXELS - 1, int'($time / 10),
                     "m_last");
         exp_pixel_cnt++;
