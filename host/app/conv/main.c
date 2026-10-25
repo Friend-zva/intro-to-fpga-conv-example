@@ -39,20 +39,17 @@ static int DBG_INFO = 1;
 
 static int FLAG_LAST = SET_FLAG_STOP | SET_FLAG_EOP | SET_FLAG_COMP;
 
-static int IMAGE_WIDTH = 256;
-static int IMAGE_HEIGHT = 8;
-static int KERNEL_SIZE = 3;
+static int SIZE_PIXEL = 4;
 
 int main(int argc, char *argv[]) {
     signal(SIGINT, handle_sigint);
     volatile int val;
 
-    Config config = init_config(argc, argv);
+    Config config = init_config(argc, argv, SIZE_PIXEL);
     uint32_t size_data_h2c = config.size_data;
+    uint32_t size_data_c2h =
+        config.size_data / SIZE_PIXEL; // boundaries are zero-padded
     uint32_t size_block = config.size_block;
-
-    uint32_t output_rows = IMAGE_HEIGHT - (KERNEL_SIZE - 1);
-    uint32_t size_data_c2h = output_rows * IMAGE_WIDTH;
 
     uint32_t num_desc_h2c = size_data_h2c / size_block;
     uint32_t num_desc_c2h = size_data_c2h / size_block;
@@ -344,10 +341,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    for (int row = 0; row < IMAGE_HEIGHT - KERNEL_SIZE / 2 - 1; row++) {
-        for (int col = 0; col < IMAGE_WIDTH; col++) {
-            uint8_t exp = (col == 0 || col == IMAGE_WIDTH - 1) ? 0 : col;
-            uint8_t got = dp[row * IMAGE_WIDTH + col];
+    uint32_t pad = config.size_kernel / 2;
+    for (int row = pad; row < config.height_image - pad; row++) {
+        for (int col = 0; col < config.width_image - pad; col++) {
+            uint8_t exp = col;
+            uint8_t got = dp[row * config.width_image + col];
             if (got != exp) {
                 printf("*** FAILED row=%d col=%d exp=%d got=%d ***\n", row, col, exp,
                        got);

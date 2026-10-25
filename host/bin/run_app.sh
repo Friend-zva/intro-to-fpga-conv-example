@@ -20,80 +20,31 @@ lsmod | grep -q 'gowin_pcie' || {
   sudo insmod ${bindir}/../driver/gowin_pcie_drv.ko
 }
 
-data=4096
+width=256
+height=8
+kernel=3
 block=128
 dump=0
 
 if [ $# -ge 1 ]; then
-  data=$1
-  block=$2
-  dump=$3
+  width=$1
+  height=${2:-$height}
+  kernel=${3:-$kernel}
+  block=${4:-$block}
+  dump=${5:-$dump}
 else
-  echo '*  Data   size (bytes) :'
-  echo '0. default  1. 1KB  2. 4KB  3. 16KB  4. 1MB  5. 4MB'
-  echo -n "Please enter your choice (0-7): "
-  while true; do
-    read -n 1 b
-    [ "$b" -ge 0 ] && [ "$b" -le 8 ] && {
-      data=$b
-      break
-    }
-    echo -n " Invalid choice, try again: "
-  done
-  echo ''
-
-  echo '*  Block  size (bytes) :'
-  echo '0. default  1. 128  2. 256  3. 512  4. 1024  5. 2048  6. 4096'
-  echo -n "Please enter your choice (0-6): "
-  while true; do
-    read -n 1 b
-    [ "$b" -ge 0 ] && [ "$b" -le 8 ] && {
-      block=$b
-      break
-    }
-    echo -n " Invalid choice, try again: "
-  done
-  echo ''
-
-  echo '*  Enable  dump (bool) :'
-  echo '1. Yes  2. No'
-  echo -n "Please enter your choice (1-2): "
-  while true; do
-    read -n 1 d
-    case "$d" in
-    1 | y | Y)
-      dump=1
-      break
-      ;;
-    2 | n | N)
-      dump=0
-      break
-      ;;
-    *) echo -n " Invalid choice, try again: " ;;
-    esac
-  done
-  echo ''
+  read -r -p "Image  width [$width]: " value
+  width=${value:-$width}
+  read -r -p "Image height [  $height]: " value
+  height=${value:-$height}
+  read -r -p "Kernel  size [  $kernel]: " value
+  kernel=${value:-$kernel}
+  read -r -p "Block   size [$block]: " value
+  block=${value:-$block}
+  read -r -p "Enable  dump [  $dump]: " value
+  dump=${value:-$dump}
 fi
 
-case $data in
-1) size_data=1024 ;;
-2) size_data=4096 ;;
-3) size_data=16384 ;;
-4) size_data=1048576 ;;
-5) size_data=4194304 ;;
-*) size_data=2048 ;;
-esac
+echo "width=$width height=$height kernel=$kernel block=$block dump=$dump"
 
-case $block in
-1) size_block=128 ;;
-2) size_block=256 ;;
-3) size_block=512 ;;
-4) size_block=1024 ;;
-5) size_block=2048 ;;
-6) size_block=4096 ;;
-*) size_block=128 ;;
-esac
-
-echo "size_data=$size_data size_block=$size_block"
-
-sudo ${bindir}/conv ${size_data} ${size_block} ${dump}
+sudo ${bindir}/conv "$width" "$height" "$kernel" "$block" "$dump"

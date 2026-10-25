@@ -2,7 +2,7 @@ CC   := gcc
 KDIR ?= /lib/modules/$(shell uname -r)/build
 
 BIN    := bin
-CFLAGS := -g -Wall -std=c11 -D_GNU_SOURCE
+CFLAGS := -Wall -std=c11 -D_GNU_SOURCE
 
 APP_SOURCES := $(wildcard app/conv/*.c) $(wildcard app/lib/*.c)
 ALL_SOURCES := \
