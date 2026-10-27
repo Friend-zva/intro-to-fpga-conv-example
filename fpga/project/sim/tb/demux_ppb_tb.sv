@@ -30,11 +30,11 @@ module demux_ppb_tb ();
   logic [ SEL_W-1:0] write_sel;
   logic [ADDR_W-1:0] addr;
 
-  demux_1_to_m1 #(
+  demux #(
     .M          (M),
     .IMAGE_WIDTH(IMAGE_WIDTH),
     .RD_LATENCY (RD_LATENCY)
-  ) u_demux (
+  ) u_demux_1_to_m1 (
     .clk      (clk),
     .rst_n    (rst_n),
     .s_valid  (s_valid),
@@ -68,15 +68,15 @@ module demux_ppb_tb ();
     );
   end
 
-  logic       mux_ready;
-  logic       mux_valid;
-  logic       mux_last;
-  logic [7:0] mux_data  [M];
+  logic       switch_ready;
+  logic       switch_valid;
+  logic       switch_last;
+  logic [7:0] switch_data  [M];
 
-  mux_m1_to_m #(
+  switch #(
     .M         (M),
     .RD_LATENCY(RD_LATENCY)
-  ) u_mux (
+  ) u_switch_m1_to_m (
     .clk       (clk),
     .rst_n     (rst_n),
     .write_sel (write_sel),
@@ -85,10 +85,10 @@ module demux_ppb_tb ();
     .s_last    (demux_last),
     .s_data    (line_data),
     .s_ready   (demux_ready),
-    .m_ready   (mux_ready),
-    .m_valid   (mux_valid),
-    .m_last    (mux_last),
-    .m_data    (mux_data)
+    .m_ready   (switch_ready),
+    .m_valid   (switch_valid),
+    .m_last    (switch_last),
+    .m_data    (switch_data)
   );
 
   logic        ker_valid;
@@ -106,16 +106,16 @@ module demux_ppb_tb ();
       .rst_n    (rst_n),
       .ker_valid(ker_valid),
       .ker_data (ker_data),
-      .s_valid  (mux_valid),
-      .s_last   (mux_last),
-      .s_data   (mux_data[i]),
+      .s_valid  (switch_valid),
+      .s_last   (switch_last),
+      .s_data   (switch_data[i]),
       .m_ready  (conv_ready),
       .m_valid  (conv_valid[i]),
       .m_data   (conv_data[i])
     );
   end
 
-  assign mux_ready = 1'b1;
+  assign switch_ready = 1'b1;
 
   logic       add_ready;
   logic       add_valid;
@@ -213,7 +213,8 @@ module demux_ppb_tb ();
     end
     reset_dut();
 
-    $display("Test 1: demux -> mux -> conv1d x%0d -> adder -> ping-pong buffer", M);
+    $display("Test 1: demux -> switch -> conv1d x%0d -> adder -> ping-pong buffer",
+             M);
     $display("Kernel loading");
     @(negedge clk);
     ker_valid = 1'b1;
@@ -230,7 +231,7 @@ module demux_ppb_tb ();
 
         @(posedge clk);
         check_value(s_ready, 1'b1, row * IMAGE_WIDTH + col, "s_ready");
-        check_value(mux_valid, 1'b0, row * IMAGE_WIDTH + col, "mux_valid");
+        check_value(switch_valid, 1'b0, row * IMAGE_WIDTH + col, "switch_valid");
       end
     end
 
@@ -241,10 +242,12 @@ module demux_ppb_tb ();
       s_data  = col[7:0];
 
       @(posedge clk);
-      check_value(mux_valid, (col >= RD_LATENCY && col < IMAGE_WIDTH + RD_LATENCY), col,
-                  "mux_valid");
-      check_value(add_valid, (col >= LATENCY_ADD && col < IMAGE_WIDTH_REAL + LATENCY_ADD),
-                  col, "add_valid");
+      check_value(switch_valid,
+                  (col >= RD_LATENCY && col < IMAGE_WIDTH + RD_LATENCY), col,
+                  "switch_valid");
+      check_value(add_valid,
+                  (col >= LATENCY_ADD && col < IMAGE_WIDTH_REAL + LATENCY_ADD), col,
+                  "add_valid");
 
       if (add_valid && add_ready) begin
         check_value(add_data, expect_sum(exp_pixel_cnt), exp_pixel_cnt, "add_data");

@@ -79,7 +79,7 @@ module logic_conv #(
   logic [           LINE_PTR-1:0] write_sel;
   logic [$clog2(IMAGE_WIDTH)-1:0] col_addr;
 
-  demux_1_to_m1 #(
+  demux #(
     .M          (M),
     .IMAGE_WIDTH(IMAGE_WIDTH),
     .RD_LATENCY (RD_LATENCY)
@@ -117,15 +117,15 @@ module logic_conv #(
     );
   end
 
-  logic       mux_ready;
-  logic       mux_valid;
-  logic       mux_last;
-  logic [7:0] mux_data  [M];
+  logic       switch_ready;
+  logic       switch_valid;
+  logic       switch_last;
+  logic [7:0] switch_data  [M];
 
-  mux_m1_to_m #(
+  switch #(
     .M         (M),
     .RD_LATENCY(RD_LATENCY)
-  ) u_mux_m1_to_m (
+  ) u_switch_m1_to_m (
     .clk       (clk),
     .rst_n     (rst_n),
     .write_sel (write_sel),
@@ -134,10 +134,10 @@ module logic_conv #(
     .s_last    (demux_last),
     .s_data    (lb_data),
     .s_ready   (demux_ready),
-    .m_ready   (mux_ready),
-    .m_valid   (mux_valid),
-    .m_last    (mux_last),
-    .m_data    (mux_data)
+    .m_ready   (switch_ready),
+    .m_valid   (switch_valid),
+    .m_last    (switch_last),
+    .m_data    (switch_data)
   );
 
   logic [M-1:0] ker_ready;
@@ -169,9 +169,9 @@ module logic_conv #(
       .ker_valid(ker_valid[i]),
       .ker_data (ker_data),
       .ker_ready(ker_ready[i]),
-      .s_valid  (mux_valid),
-      .s_last   (mux_last),
-      .s_data   (mux_data[i]),
+      .s_valid  (switch_valid),
+      .s_last   (switch_last),
+      .s_data   (switch_data[i]),
       .s_ready  (conv_s_ready[i]),
       .m_ready  (conv_ready),
       .m_valid  (conv_valid[i]),
@@ -179,7 +179,7 @@ module logic_conv #(
     );
   end
 
-  assign mux_ready = &conv_s_ready;
+  assign switch_ready = &conv_s_ready;
 
   logic       add_ready;
   logic       add_valid;

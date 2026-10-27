@@ -27,7 +27,7 @@ module demux_tb ();
   logic [ SEL_W-1:0] write_sel;
   logic [ADDR_W-1:0] addr;
 
-  demux_1_to_m1 #(
+  demux #(
     .M          (M),
     .IMAGE_WIDTH(IMAGE_WIDTH),
     .RD_LATENCY (RD_LATENCY)

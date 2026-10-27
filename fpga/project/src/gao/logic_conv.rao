@@ -116,18 +116,18 @@
                 <Signal>u_logic_conv/lb_data[0][1]</Signal>
                 <Signal>u_logic_conv/lb_data[0][0]</Signal>
             </Bus>
-            <Signal capture_enable="true">u_logic_conv/mux_ready</Signal>
-            <Signal capture_enable="true">u_logic_conv/mux_valid</Signal>
-            <Signal capture_enable="true">u_logic_conv/mux_last</Signal>
-            <Bus capture_enable="true" name="u_logic_conv/mux_data[0][7:0]">
-                <Signal>u_logic_conv/mux_data[0][7]</Signal>
-                <Signal>u_logic_conv/mux_data[0][6]</Signal>
-                <Signal>u_logic_conv/mux_data[0][5]</Signal>
-                <Signal>u_logic_conv/mux_data[0][4]</Signal>
-                <Signal>u_logic_conv/mux_data[0][3]</Signal>
-                <Signal>u_logic_conv/mux_data[0][2]</Signal>
-                <Signal>u_logic_conv/mux_data[0][1]</Signal>
-                <Signal>u_logic_conv/mux_data[0][0]</Signal>
+            <Signal capture_enable="true">u_logic_conv/switch_ready</Signal>
+            <Signal capture_enable="true">u_logic_conv/switch_valid</Signal>
+            <Signal capture_enable="true">u_logic_conv/switch_last</Signal>
+            <Bus capture_enable="true" name="u_logic_conv/switch_data[0][7:0]">
+                <Signal>u_logic_conv/switch_data[0][7]</Signal>
+                <Signal>u_logic_conv/switch_data[0][6]</Signal>
+                <Signal>u_logic_conv/switch_data[0][5]</Signal>
+                <Signal>u_logic_conv/switch_data[0][4]</Signal>
+                <Signal>u_logic_conv/switch_data[0][3]</Signal>
+                <Signal>u_logic_conv/switch_data[0][2]</Signal>
+                <Signal>u_logic_conv/switch_data[0][1]</Signal>
+                <Signal>u_logic_conv/switch_data[0][0]</Signal>
             </Bus>
             <Bus capture_enable="true" name="u_logic_conv/gen_conv1ds[0].u_conv1d/u_window/cnt[1:0]">
                 <Signal>u_logic_conv/gen_conv1ds[0].u_conv1d/u_window/cnt[1]</Signal>

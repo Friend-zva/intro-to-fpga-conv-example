@@ -16,7 +16,7 @@ src/convolution/back/grayscale_stream.sv
 src/convolution/back/ping_pong_buffer.sv
 src/convolution/front/demux.sv
 src/convolution/front/line_buffer.sv
-src/convolution/front/mux.sv
+src/convolution/front/switch.sv
 src/convolution/front/rgb_to_grayscale_stream.sv
 src/convolution/middle/adder.sv
 src/convolution/middle/conv1d.sv

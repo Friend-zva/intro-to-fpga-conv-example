@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module demux_mux_tb ();
+module demux_switch_tb ();
   parameter int M = 3;
   parameter int IMAGE_WIDTH = 64;
   parameter int RD_LATENCY = 2;
@@ -26,11 +26,11 @@ module demux_mux_tb ();
   logic [ SEL_W-1:0] write_sel;
   logic [ADDR_W-1:0] addr;
 
-  demux_1_to_m1 #(
+  demux #(
     .M          (M),
     .IMAGE_WIDTH(IMAGE_WIDTH),
     .RD_LATENCY (RD_LATENCY)
-  ) u_demux (
+  ) u_demux_1_to_m1 (
     .clk      (clk),
     .rst_n    (rst_n),
     .s_valid  (s_valid),
@@ -68,10 +68,10 @@ module demux_mux_tb ();
   logic       m_valid;
   logic [7:0] m_data  [M];
 
-  mux_m1_to_m #(
+  switch #(
     .M         (M),
     .RD_LATENCY(RD_LATENCY)
-  ) u_mux (
+  ) u_switch_m1_to_m (
     .clk       (clk),
     .rst_n     (rst_n),
     .write_sel (write_sel),
@@ -122,7 +122,7 @@ module demux_mux_tb ();
     end
     reset_dut();
 
-    $display("Test 1: demux -> line_buffer x%0d -> mux", N);
+    $display("Test 1: demux -> line_buffer x%0d -> switch", N);
     for (int row = 0; row < N; row++) begin
       for (int col = 0; col < IMAGE_WIDTH; col++) begin
         @(negedge clk);
@@ -136,8 +136,8 @@ module demux_mux_tb ();
         if (m_valid) begin
           for (int line = 0; line < M; line++) begin
             exp_data = col - RD_LATENCY;
-            check_value(m_data[line], {exp_data[5:0], line[1:0]}, row * IMAGE_WIDTH + col,
-                        "m_data");
+            check_value(m_data[line], {exp_data[5:0], line[1:0]},
+                        row * IMAGE_WIDTH + col, "m_data");
           end
         end
       end
@@ -157,7 +157,8 @@ module demux_mux_tb ();
       for (int line = 0; line < M; line++) begin
         exp_data       = ((col < RD_LATENCY) ? IMAGE_WIDTH : 0) + col - RD_LATENCY;
         exp_demux_line = (col < RD_LATENCY) ? line : (line + 1);
-        check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, col, "m_data");
+        check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, col,
+                    "m_data");
       end
     end
     @(negedge clk);
@@ -174,7 +175,8 @@ module demux_mux_tb ();
       for (int line = 0; line < M; line++) begin
         exp_data       = ((col < RD_LATENCY) ? IMAGE_WIDTH : 0) + col - RD_LATENCY;
         exp_demux_line = (col < RD_LATENCY) ? (line + 1) : (line + 2);
-        check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, col, "m_data");
+        check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, col,
+                    "m_data");
       end
     end
 
@@ -187,7 +189,8 @@ module demux_mux_tb ();
       for (int line = 0; line < M; line++) begin
         exp_data       = IMAGE_WIDTH - RD_LATENCY + tail;
         exp_demux_line = line + 2;
-        check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, tail, "m_data");
+        check_value(m_data[line], {exp_data[5:0], exp_demux_line[1:0]}, tail,
+                    "m_data");
       end
     end
     @(posedge clk);

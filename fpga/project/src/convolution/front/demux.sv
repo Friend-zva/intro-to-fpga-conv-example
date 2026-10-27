@@ -1,4 +1,4 @@
-module demux_1_to_m1 #(  // verilog_lint: waive module-filename
+module demux #(
   parameter int M           = 3,
   parameter int IMAGE_WIDTH = 640,
   parameter int RD_LATENCY  = 2

@@ -17,10 +17,10 @@ OUT = $(BUILD)/$(NAME).vvp
 INTERFACES = $(PROJECT)/src/taxi/taxi_dma_desc_if.sv $(PROJECT)/src/taxi/taxi_axis_if.sv
 CONV2D = $(PROJECT)/src/convolution
 CONV1D = $(CONV2D)/middle/conv1d.sv $(CONV2D)/middle/window.sv $(CONV2D)/middle/scalar_product.sv $(CONV2D)/middle/float_mult_byte.sv
-FRONT = $(CONV2D)/front/demux.sv $(CONV2D)/front/line_buffer.sv $(CONV2D)/front/mux.sv $(SIM_DIR)/gowin_sp_sim.sv
+FRONT = $(CONV2D)/front/demux.sv $(CONV2D)/front/line_buffer.sv $(CONV2D)/front/switch.sv $(SIM_DIR)/gowin_sp_sim.sv
 
 DEPS_demux_tb 									= $(CONV2D)/front/demux.sv
-DEPS_mux_tb 										= $(CONV2D)/front/mux.sv
+DEPS_switch_tb 										= $(CONV2D)/front/switch.sv
 DEPS_line_buffer_tb 						= $(CONV2D)/front/line_buffer.sv $(SIM_DIR)/gowin_sp_sim.sv
 DEPS_rgb_to_grayscale_stream_tb = $(INTERFACES) $(CONV2D)/front/rgb_to_grayscale_stream.sv
 
@@ -32,7 +32,7 @@ DEPS_conv1d_tb 					= $(CONV1D)
 DEPS_grayscale_stream_tb = $(INTERFACES) $(CONV2D)/back/grayscale_stream.sv
 DEPS_ping_pong_buffer_tb = $(CONV2D)/back/ping_pong_buffer.sv $(SIM_DIR)/gowin_sp_sim.sv
 
-DEPS_demux_mux_tb = $(FRONT)
+DEPS_demux_switch_tb = $(FRONT)
 DEPS_demux_ppb_tb = $(FRONT) $(CONV1D) $(CONV2D)/middle/adder.sv $(CONV2D)/back/ping_pong_buffer.sv
 
 .DEFAULT_GOAL := $(if $(TB),test,all)

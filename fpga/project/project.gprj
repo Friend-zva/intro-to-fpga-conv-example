@@ -10,8 +10,8 @@
         <File path="src/convolution/back/ping_pong_buffer.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/front/demux.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/front/line_buffer.sv" type="file.verilog" enable="1"/>
-        <File path="src/convolution/front/mux.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/front/rgb_to_grayscale_stream.sv" type="file.verilog" enable="1"/>
+        <File path="src/convolution/front/switch.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/middle/adder.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/middle/conv1d.sv" type="file.verilog" enable="1"/>
         <File path="src/convolution/middle/float_mult_byte.sv" type="file.verilog" enable="1"/>

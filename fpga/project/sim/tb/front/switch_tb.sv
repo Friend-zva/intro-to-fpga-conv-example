@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module mux_tb ();
+module switch_tb ();
   parameter int M = 3;
   parameter int RD_LATENCY = 2;
 
@@ -26,7 +26,7 @@ module mux_tb ();
   logic       m_last;
   logic [7:0] m_data  [M];
 
-  mux_m1_to_m #(
+  switch #(
     .M         (M),
     .RD_LATENCY(RD_LATENCY)
   ) dut (
@@ -135,7 +135,8 @@ module mux_tb ();
       s_last  = (cycle == IMAGE_WIDTH - 1);
 
       @(posedge clk);
-      check_value(m_last, ((cycle - RD_LATENCY) == IMAGE_WIDTH - 1), cycle, "m_last");
+      check_value(m_last, ((cycle - RD_LATENCY) == IMAGE_WIDTH - 1), cycle,
+                  "m_last");
       check_value(s_ready, 1'b1, cycle, "s_ready");
     end
 

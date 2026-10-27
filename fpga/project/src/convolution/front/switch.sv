@@ -1,4 +1,4 @@
-module mux_m1_to_m #(  // verilog_lint: waive module-filename
+module switch #(
   parameter int M          = 3,
   parameter int RD_LATENCY = 2
 ) (
