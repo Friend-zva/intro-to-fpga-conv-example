@@ -61,7 +61,7 @@ The IP cores used in this project (SerDes/PCIe Controller, PCIe SGDMA, DDR3 Memo
 | SerDes / PCIe Controller | `IP Core Generator` → `Soft IP Core` → `SerDes` → `SerDes`, Protocol: `PCI Express Controller`                       | `Vendor/Device ID` is `22c2`/`1100`; `Lane Width`, `Max Link Speed`, `Max Payload Size` at maximum; `TLP Clock Frequency` is 100 MHz; `BAR0` — SGDMA control, `BAR2` — user registers (both 64-bit) |
 | PCIe SGDMA               | `IP Core Generator` → `Soft IP Core` → `Interface and Interconnect` → `PCIe SGDMA`                                   | -                                                                                                                                                                                                   |
 | DDR3 Memory Interface    | `IP Core Generator` → `Soft IP Core` → `Memory Controller` → `DDRx SDRAM Memory Interface` → `DDR3 Memory Interface` | Enable `AXI4 Interface` with `Mode4`; `Dq Width` is 32, `Dram Width` is 16; `Row` is 15, `Column` is 10 (for 1 GB)                                                                                  |
-| PLL                      | `IP Core Generator` → `Hard Module` → `CLOCK` → `PLL_ADV`                                                            | `CLKIN` is 100 MHz, `CLKOUT0` is 400 MHz; enable `PLL Reset`, `Enable Lock`, and `Clock Enable Ports` on the `Common` tab                                                                           |
+| PLL                      | `IP Core Generator` → `Hard Module` → `CLOCK` → `PLL_ADV`                                                            | `CLKIN` is 50 MHz; outputs are `CLKOUT0` = 50 MHz, `CLKOUT1` = 100 MHz, `CLKOUT2` = 200 MHz, and `CLKOUT3` = 400 MHz; enable `PLL Reset`, `Enable Lock`, and `Clock Enable Ports` on the `Common` tab |
 
 > Additional generation options are stored in the corresponding `.ipc` files.
 
@@ -80,10 +80,33 @@ Restore `fpga/project/project.gar` via `Project` → `Restore Archived Project`.
 0. Check if the device is recognized: `sudo lspci -vvd 22c2:1100`.
 1. Navigate to the `host/` directory: `cd host`.
 2. Build the driver and applications: `sudo make`.
-3. Run the tests: `./bin/run_app`. Choose options for the transfer:
-   - data size: the size of the data stored in host RAM and transferred to the board;
+3. Run the test: `./bin/run_app`. Choose options for the transfer:
+   - width & height image: the size of the data stored in host RAM and transferred to the board;
+   - kernel size: the size of the convolution kernel (must be odd);
    - block size: the size of the data described by a single descriptor (for testing);
    - dump option: the ability to dump data before and after transmission.
+
+   The default image parameters are `256 x 8` with a `3 x 3` kernel. For example:
+   `./bin/run_app 256 8 3 128 0`.
+
+### Test RTL
+
+With `Icarus Verilog` and `Make` installed, run from the repository root:
+
+```sh
+make -C fpga all
+make -C fpga TB=project/sim/tb/front/rgb_to_grayscale_stream_tb.sv
+make -C fpga TB=project/sim/tb/back/grayscale_stream_tb.sv
+make -C fpga TB=project/sim/tb/middle/window_tb.sv \
+  DEPS=project/src/convolution/middle/window.sv
+```
+
+For `Verible` formatting and linting, install `Verible` and run:
+
+```sh
+make -C fpga format
+make -C fpga lint
+```
 
 ## LEDs
 
@@ -103,9 +126,9 @@ Status indication on the Dock (LED0 is on the far right):
 ## Implementation Details
 
 - **Clocks**:
-  - `sys_clk` (200 MHz) and `memory_clk` (400 MHz) come from the on-board PLL.
-  - `tlp_clk` (100 MHz, ÷2 from `sys_clk`) clocks the PCIe Controller and SGDMA logic.
-  - The DDR3 controller runs its own output clock, `ui_clk` (100 MHz, ÷4 from `memory_clk`), which clocks the AXI interconnect, both AXI DMA engines, and the convolution core.
+  - The `sys_clk_p` input clock is 50 MHz.
+  - The PLL generates 50 MHz, 100 MHz, 200 MHz, and 400 MHz outputs. `tlp_clk` and `cfg_clk` use the 100 MHz output; `memory_clk` uses the 400 MHz output.
+  - The DDR3 controller runs its own output clock, `ui_clk` (100 MHz), which clocks the AXI interconnect, both AXI DMA engines, and the convolution core.
 - **Reset**:
   - The design comes out of reset once the PCIe startup delay elapses and the DDR3 controller finishes calibration (`init_calib_complete`).
   - Button **S0 (K16)** resets the transmission.
